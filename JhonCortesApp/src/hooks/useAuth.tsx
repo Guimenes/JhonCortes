@@ -52,6 +52,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   async function signIn(credentials: LoginRequest) {
     try {
       setLoading(true);
+      
+      console.log('Dados recebidos no useAuth:', {
+        email: credentials.email,
+        password: credentials.password ? '***' : 'undefined'
+      });
+      
       const response: AuthResponse = await authService.login(credentials);
 
       await SecureStore.setItemAsync('authToken', response.token);

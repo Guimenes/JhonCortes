@@ -9,7 +9,18 @@ export const authService = {
    * Fazer login
    */
   login: async (credentials: LoginRequest) => {
-    const response = await api.post('/auth/login', credentials);
+    // Converter email para identifier para compatibilidade com backend
+    const loginData = {
+      identifier: credentials.email,
+      password: credentials.password
+    };
+    
+    console.log('Dados de login sendo enviados:', {
+      identifier: loginData.identifier,
+      password: loginData.password ? '***' : 'undefined'
+    });
+    
+    const response = await api.post('/auth/login', loginData);
     return response.data;
   },
 

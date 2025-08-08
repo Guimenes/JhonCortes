@@ -25,10 +25,16 @@ export const LoginScreen: React.FC = () => {
       return;
     }
 
+    console.log('Tentativa de login com:', {
+      email: email,
+      password: password ? '***' : 'undefined'
+    });
+
     setLoading(true);
     try {
       await signIn({ email, password });
     } catch (error: any) {
+      console.error('Erro no login:', error);
       Alert.alert('Erro', error.message || 'Erro ao fazer login');
     } finally {
       setLoading(false);
@@ -62,7 +68,6 @@ export const LoginScreen: React.FC = () => {
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
-              leftIcon="mail"
             />
 
             <Input
@@ -71,7 +76,6 @@ export const LoginScreen: React.FC = () => {
               value={password}
               onChangeText={setPassword}
               secureTextEntry
-              leftIcon="lock-closed"
             />
 
             <Button
