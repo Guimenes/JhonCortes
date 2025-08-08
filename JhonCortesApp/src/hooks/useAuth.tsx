@@ -52,7 +52,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   async function signIn(credentials: LoginRequest) {
     try {
       setLoading(true);
-      const response: AuthResponse = await authService.login(credentials);
+      // Garante que o campo 'identifier' seja enviado
+      const loginPayload = {
+        identifier: credentials.identifier,
+        password: credentials.password
+      };
+      const response: AuthResponse = await authService.login(loginPayload);
 
       await SecureStore.setItemAsync('authToken', response.token);
       await AsyncStorage.setItem('userData', JSON.stringify(response.user));
