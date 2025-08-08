@@ -1,11 +1,68 @@
 .App {
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+ @media (min-width: 1024px) {
+  .container {
+    padding: 0 var(--spacing-12);
+  }
 }
 
-main {
-  flex: 1;
+/* Custom SweetAlert2 Styles */
+.swal2-popup {
+  font-family: 'Inter', sans-serif !important;
+  border-radius: 16px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+}
+
+.swal2-title {
+  color: var(--primary-black) !important;
+  font-weight: 600 !important;
+}
+
+.swal2-content {
+  color: #6b7280 !important;
+}
+
+.swal2-confirm {
+  background-color: var(--primary-yellow) !important;
+  color: var(--primary-black) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s !important;
+}
+
+.swal2-confirm:hover {
+  background-color: var(--primary-gold) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(184, 134, 11, 0.3) !important;
+}
+
+.swal2-cancel {
+  background-color: #f3f4f6 !important;
+  color: #6b7280 !important;
+  border: 2px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+}
+
+.swal2-cancel:hover {
+  background-color: #e5e7eb !important;
+  color: var(--primary-black) !important;
+}
+
+.swal2-toast {
+  border-radius: 12px !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.swal2-toast .swal2-title {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+}
+
+.swal2-timer-progress-bar {
+  background: var(--primary-yellow) !important;
+}
 }
 
 /* Utility classes for the placeholder sections */

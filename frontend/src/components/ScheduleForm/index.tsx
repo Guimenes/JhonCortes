@@ -6,6 +6,7 @@ import {
   Calendar
 } from 'lucide-react';
 import type { Schedule } from '../../types';
+import { showWarning } from '../../utils/alerts';
 import './styles.css';
 
 interface ScheduleFormProps {
@@ -63,7 +64,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onSubmit, onClose
       const end = new Date(`1970-01-01T${formData.endTime}:00`);
       
       if (start >= end) {
-        alert('Horário de início deve ser anterior ao horário de fim');
+        showWarning('Horário inválido', 'O horário de início deve ser anterior ao horário de fim.');
         return;
       }
 

@@ -7,6 +7,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import type { Unavailability } from '../../types';
+import { showWarning } from '../../utils/alerts';
 import './styles.css';
 
 interface UnavailabilityFormProps {
@@ -68,7 +69,7 @@ const UnavailabilityForm: React.FC<UnavailabilityFormProps> = ({
       const end = new Date(`1970-01-01T${formData.endTime}:00`);
       
       if (start >= end) {
-        alert('Horário de início deve ser anterior ao horário de fim');
+        showWarning('Horário inválido', 'O horário de início deve ser anterior ao horário de fim.');
         return;
       }
 
@@ -79,7 +80,7 @@ const UnavailabilityForm: React.FC<UnavailabilityFormProps> = ({
         today.setHours(0, 0, 0, 0);
         
         if (selectedDate < today) {
-          alert('A data não pode ser no passado');
+          showWarning('Data inválida', 'A data não pode ser no passado. Selecione uma data futura.');
           return;
         }
       }

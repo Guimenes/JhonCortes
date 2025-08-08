@@ -12,6 +12,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { servicesAPI } from '../../services/api';
 import ServiceForm from '../../components/ServiceForm';
 import type { Service } from '../../types';
+import { showError, showSuccess, showDeleteConfirmation, showPermanentDeleteConfirmation } from '../../utils/alerts';
 import './styles.css';
 
 const AdminServices: React.FC = () => {
@@ -42,7 +43,7 @@ const AdminServices: React.FC = () => {
       setServices(data);
     } catch (error) {
       console.error('Erro ao carregar serviços:', error);
-      alert('Erro ao carregar serviços');
+      showError('Erro ao carregar serviços', 'Não foi possível carregar a lista de serviços. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -59,14 +60,37 @@ const AdminServices: React.FC = () => {
   };
 
   const handleDeleteService = async (service: Service) => {
-    if (window.confirm(`Tem certeza que deseja desativar o serviço "${service.name}"?`)) {
+    const result = await showDeleteConfirmation(
+      `serviço "${service.name}"`,
+      `Tem certeza que deseja desativar o serviço <strong>"${service.name}"</strong>?<br><small>O serviço ficará inativo mas poderá ser reativado depois.</small>`
+    );
+    
+    if (result.isConfirmed) {
       try {
         await servicesAPI.delete(service._id);
-        alert('Serviço desativado com sucesso!');
+        showSuccess('Sucesso!', 'Serviço desativado com sucesso!');
         loadServices();
       } catch (error) {
         console.error('Erro ao desativar serviço:', error);
-        alert('Erro ao desativar serviço');
+        showError('Erro', 'Não foi possível desativar o serviço. Tente novamente.');
+      }
+    }
+  };
+
+  const handlePermanentDeleteService = async (service: Service) => {
+    const result = await showPermanentDeleteConfirmation(
+      service.name,
+      undefined
+    );
+    
+    if (result.isConfirmed) {
+      try {
+        await servicesAPI.deletePermanent(service._id);
+        showSuccess('Sucesso!', 'Serviço excluído permanentemente!');
+        loadServices();
+      } catch (error) {
+        console.error('Erro ao excluir serviço permanentemente:', error);
+        showError('Erro', 'Não foi possível excluir o serviço permanentemente. Tente novamente.');
       }
     }
   };
@@ -74,11 +98,11 @@ const AdminServices: React.FC = () => {
   const handleToggleActive = async (service: Service) => {
     try {
       await servicesAPI.update(service._id, { isActive: !service.isActive });
-      alert(`Serviço ${service.isActive ? 'desativado' : 'ativado'} com sucesso!`);
+      showSuccess('Sucesso!', `Serviço ${service.isActive ? 'desativado' : 'ativado'} com sucesso!`);
       loadServices();
     } catch (error) {
       console.error('Erro ao alterar status do serviço:', error);
-      alert('Erro ao alterar status do serviço');
+      showError('Erro', 'Não foi possível alterar o status do serviço. Tente novamente.');
     }
   };
 
@@ -86,16 +110,16 @@ const AdminServices: React.FC = () => {
     try {
       if (editingService) {
         await servicesAPI.update(editingService._id, data);
-        alert('Serviço atualizado com sucesso!');
+        showSuccess('Sucesso!', 'Serviço atualizado com sucesso!');
       } else {
         await servicesAPI.create(data);
-        alert('Serviço criado com sucesso!');
+        showSuccess('Sucesso!', 'Serviço criado com sucesso!');
       }
       setShowForm(false);
       loadServices();
     } catch (error: any) {
       console.error('Erro ao salvar serviço:', error);
-      alert(error.response?.data?.message || 'Erro ao salvar serviço');
+      showError('Erro ao salvar serviço', error.response?.data?.message || 'Verifique os dados e tente novamente.');
     }
   };
 
@@ -121,11 +145,26 @@ const AdminServices: React.FC = () => {
   return (
     <div className="admin-services-page">
       <div className="page-header">
-        <h1>Gerenciar Serviços</h1>
-        <button className="btn btn-primary" onClick={handleCreateService}>
-          <Plus size={18} />
-          Novo Serviço
-        </button>
+        <div className="header-content">
+          <h1>Gerenciar Serviços</h1>
+          <div className="services-stats">
+            <span className="stat-item">
+              <strong>{services.filter(s => s.isActive).length}</strong> ativos
+            </span>
+            <span className="stat-item">
+              <strong>{services.filter(s => !s.isActive).length}</strong> inativos
+            </span>
+            <span className="stat-item">
+              <strong>{services.length}</strong> total
+            </span>
+          </div>
+        </div>
+        <div className="header-actions">
+          <button className="btn btn-primary" onClick={handleCreateService}>
+            <Plus size={18} />
+            Novo Serviço
+          </button>
+        </div>
       </div>
 
       <div className="filters-section">
@@ -188,6 +227,15 @@ const AdminServices: React.FC = () => {
                     >
                       <Trash2 size={16} />
                     </button>
+                    {!service.isActive && (
+                      <button
+                        className="btn-icon permanent-delete"
+                        onClick={() => handlePermanentDeleteService(service)}
+                        title="Excluir Permanentemente"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -240,6 +288,30 @@ const AdminServices: React.FC = () => {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Botão Flutuante para Adicionar Mais Serviços */}
+      {filteredServices.length > 0 && (
+        <button 
+          className="floating-add-btn" 
+          onClick={handleCreateService}
+          title="Adicionar Novo Serviço"
+        >
+          <Plus size={24} />
+        </button>
+      )}
+
+      {/* Seção de Ações Rápidas */}
+      {filteredServices.length > 0 && (
+        <div className="quick-actions">
+          <button 
+            className="btn btn-primary btn-wide" 
+            onClick={handleCreateService}
+          >
+            <Plus size={18} />
+            Adicionar Mais Serviços
+          </button>
         </div>
       )}
 

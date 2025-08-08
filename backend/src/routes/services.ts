@@ -131,6 +131,29 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
+// Permanently delete service (Admin only) - Hard delete
+router.delete('/:id/permanent', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const service = await Service.findByIdAndDelete(id);
+
+    if (!service) {
+      return res.status(404).json({ message: 'Serviço não encontrado' });
+    }
+
+    res.json({
+      message: 'Serviço excluído permanentemente',
+      service
+    });
+  } catch (error: any) {
+    res.status(400).json({ 
+      message: 'Erro ao excluir serviço permanentemente',
+      error: error.message 
+    });
+  }
+});
+
 // Get services by category
 router.get('/category/:category', async (req, res) => {
   try {

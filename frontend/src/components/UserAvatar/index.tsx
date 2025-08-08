@@ -20,8 +20,6 @@ const UserAvatar: React.FC<UserAvatarProps> = memo(({ user }) => {
 
   const avatarUrl = user.avatar ? `${import.meta.env.VITE_BASE_URL || 'http://localhost:5000'}${user.avatar}` : null;
 
-  console.log('UserAvatar render:', { user: user.name, avatar: user.avatar, avatarUrl });
-
   return (
     <>
       <div className="user-avatar" onClick={() => setShowProfile(true)}>
@@ -32,12 +30,6 @@ const UserAvatar: React.FC<UserAvatarProps> = memo(({ user }) => {
               alt={user.name} 
               crossOrigin="anonymous"
               loading="lazy"
-              onError={(e) => {
-                console.error('Erro ao carregar avatar:', e);
-              }}
-              onLoad={() => {
-                console.log('Avatar carregado com sucesso:', avatarUrl);
-              }}
             />
           ) : (
             <span className="user-initials">{getInitials(user.name)}</span>

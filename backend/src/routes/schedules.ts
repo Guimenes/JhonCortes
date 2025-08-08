@@ -7,7 +7,7 @@ const router = express.Router();
 // === ROTAS DE HORÁRIOS DE FUNCIONAMENTO ===
 
 // Get all schedules
-router.get('/schedules', async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const schedules = await Schedule.find({ isActive: true }).sort({ dayOfWeek: 1, startTime: 1 });
     res.json(schedules);
@@ -20,7 +20,7 @@ router.get('/schedules', async (req, res) => {
 });
 
 // Get all schedules (Admin only)
-router.get('/schedules/admin', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/admin', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const schedules = await Schedule.find().sort({ dayOfWeek: 1, startTime: 1 });
     res.json(schedules);
@@ -33,16 +33,44 @@ router.get('/schedules/admin', authenticateToken, requireAdmin, async (req, res)
 });
 
 // Create new schedule (Admin only)
-router.post('/schedules', authenticateToken, requireAdmin, async (req, res) => {
+router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { dayOfWeek, startTime, endTime } = req.body;
 
-    // Verificar se já existe um horário para esse dia
-    const existingSchedule = await Schedule.findOne({ dayOfWeek, isActive: true });
-    if (existingSchedule) {
+    // Validar formato dos horários
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!timeRegex.test(startTime) || !timeRegex.test(endTime)) {
       return res.status(400).json({ 
-        message: 'Já existe um horário cadastrado para este dia da semana' 
+        message: 'Formato de horário inválido. Use o formato HH:mm' 
       });
+    }
+
+    // Validar se horário de início é menor que horário de fim
+    const start = new Date(`1970-01-01T${startTime}:00`);
+    const end = new Date(`1970-01-01T${endTime}:00`);
+    
+    if (start >= end) {
+      return res.status(400).json({ 
+        message: 'Horário de início deve ser anterior ao horário de fim' 
+      });
+    }
+
+    // Verificar se há conflito de horários no mesmo dia
+    const existingSchedules = await Schedule.find({ dayOfWeek, isActive: true });
+    
+    for (const existingSchedule of existingSchedules) {
+      const existingStart = new Date(`1970-01-01T${existingSchedule.startTime}:00`);
+      const existingEnd = new Date(`1970-01-01T${existingSchedule.endTime}:00`);
+
+      // Verificar se há sobreposição de horários
+      // Dois intervalos se sobrepõem se: (start1 < end2) && (start2 < end1)
+      const hasOverlap = (start < existingEnd && existingStart < end);
+      
+      if (hasOverlap) {
+        return res.status(400).json({ 
+          message: `Conflito de horário! O período ${startTime} - ${endTime} se sobrepõe com ${existingSchedule.startTime} - ${existingSchedule.endTime}` 
+        });
+      }
     }
 
     const schedule = new Schedule({
@@ -58,6 +86,7 @@ router.post('/schedules', authenticateToken, requireAdmin, async (req, res) => {
       schedule
     });
   } catch (error: any) {
+    console.error('Erro ao criar horário:', error);
     res.status(400).json({ 
       message: 'Erro ao criar horário',
       error: error.message 
@@ -66,22 +95,40 @@ router.post('/schedules', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // Update schedule (Admin only)
-router.put('/schedules/:id', authenticateToken, requireAdmin, async (req, res) => {
+router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { dayOfWeek, startTime, endTime, isActive } = req.body;
 
-    // Se está alterando o dia da semana, verificar se já existe outro horário para esse dia
-    if (dayOfWeek !== undefined) {
-      const existingSchedule = await Schedule.findOne({ 
-        dayOfWeek, 
+    // Se está alterando o horário, verificar se há conflitos
+    if ((dayOfWeek !== undefined || startTime !== undefined || endTime !== undefined)) {
+      const currentSchedule = await Schedule.findById(id);
+      if (!currentSchedule) {
+        return res.status(404).json({ message: 'Horário não encontrado' });
+      }
+
+      const newDayOfWeek = dayOfWeek !== undefined ? dayOfWeek : currentSchedule.dayOfWeek;
+      const newStartTime = startTime !== undefined ? startTime : currentSchedule.startTime;
+      const newEndTime = endTime !== undefined ? endTime : currentSchedule.endTime;
+
+      const existingSchedules = await Schedule.find({ 
+        dayOfWeek: newDayOfWeek, 
         isActive: true, 
         _id: { $ne: id } 
       });
-      if (existingSchedule) {
-        return res.status(400).json({ 
-          message: 'Já existe um horário cadastrado para este dia da semana' 
-        });
+      
+      for (const existingSchedule of existingSchedules) {
+        const existingStart = new Date(`1970-01-01T${existingSchedule.startTime}:00`);
+        const existingEnd = new Date(`1970-01-01T${existingSchedule.endTime}:00`);
+        const newStart = new Date(`1970-01-01T${newStartTime}:00`);
+        const newEnd = new Date(`1970-01-01T${newEndTime}:00`);
+
+        // Verificar se há sobreposição de horários
+        if ((newStart < existingEnd && newEnd > existingStart)) {
+          return res.status(400).json({ 
+            message: `Conflito de horário com outro período já cadastrado (${existingSchedule.startTime} - ${existingSchedule.endTime})` 
+          });
+        }
       }
     }
 
@@ -108,7 +155,7 @@ router.put('/schedules/:id', authenticateToken, requireAdmin, async (req, res) =
 });
 
 // Delete schedule (Admin only) - Soft delete
-router.delete('/schedules/:id', authenticateToken, requireAdmin, async (req, res) => {
+router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -129,6 +176,29 @@ router.delete('/schedules/:id', authenticateToken, requireAdmin, async (req, res
   } catch (error: any) {
     res.status(400).json({ 
       message: 'Erro ao desativar horário',
+      error: error.message 
+    });
+  }
+});
+
+// Permanently delete schedule (Admin only) - Hard delete
+router.delete('/:id/permanent', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const schedule = await Schedule.findByIdAndDelete(id);
+
+    if (!schedule) {
+      return res.status(404).json({ message: 'Horário não encontrado' });
+    }
+
+    res.json({
+      message: 'Horário excluído permanentemente',
+      schedule
+    });
+  } catch (error: any) {
+    res.status(400).json({ 
+      message: 'Erro ao excluir horário permanentemente',
       error: error.message 
     });
   }
@@ -252,6 +322,29 @@ router.delete('/unavailabilities/:id', authenticateToken, requireAdmin, async (r
   } catch (error: any) {
     res.status(400).json({ 
       message: 'Erro ao remover indisponibilidade',
+      error: error.message 
+    });
+  }
+});
+
+// Permanently delete unavailability (Admin only) - Hard delete
+router.delete('/unavailabilities/:id/permanent', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const unavailability = await Unavailability.findByIdAndDelete(id);
+
+    if (!unavailability) {
+      return res.status(404).json({ message: 'Indisponibilidade não encontrada' });
+    }
+
+    res.json({
+      message: 'Indisponibilidade excluída permanentemente',
+      unavailability
+    });
+  } catch (error: any) {
+    res.status(400).json({ 
+      message: 'Erro ao excluir indisponibilidade permanentemente',
       error: error.message 
     });
   }

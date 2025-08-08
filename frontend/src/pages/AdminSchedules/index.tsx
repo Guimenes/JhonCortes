@@ -13,6 +13,7 @@ import { schedulesAPI, unavailabilitiesAPI } from '../../services/api';
 import ScheduleForm from '../../components/ScheduleForm';
 import UnavailabilityForm from '../../components/UnavailabilityForm';
 import type { Schedule, Unavailability } from '../../types';
+import { showError, showSuccess, showDeleteConfirmation, showPermanentDeleteConfirmation } from '../../utils/alerts';
 import './styles.css';
 
 const AdminSchedules: React.FC = () => {
@@ -47,7 +48,7 @@ const AdminSchedules: React.FC = () => {
       }
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
-      alert('Erro ao carregar dados');
+      showError('Erro ao carregar dados', 'Não foi possível carregar as informações. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -64,14 +65,37 @@ const AdminSchedules: React.FC = () => {
   };
 
   const handleDeleteSchedule = async (schedule: Schedule) => {
-    if (window.confirm(`Tem certeza que deseja desativar o horário de ${daysOfWeek[schedule.dayOfWeek]}?`)) {
+    const result = await showDeleteConfirmation(
+      `horário de ${daysOfWeek[schedule.dayOfWeek]}`,
+      `Tem certeza que deseja desativar o horário de <strong>${daysOfWeek[schedule.dayOfWeek]}</strong>?<br><small>O horário ficará inativo mas poderá ser reativado depois.</small>`
+    );
+    
+    if (result.isConfirmed) {
       try {
         await schedulesAPI.delete(schedule._id);
-        alert('Horário desativado com sucesso!');
+        showSuccess('Sucesso!', 'Horário desativado com sucesso!');
         loadData();
       } catch (error) {
         console.error('Erro ao desativar horário:', error);
-        alert('Erro ao desativar horário');
+        showError('Erro', 'Não foi possível desativar o horário. Tente novamente.');
+      }
+    }
+  };
+
+  const handlePermanentDeleteSchedule = async (schedule: Schedule) => {
+    const result = await showPermanentDeleteConfirmation(
+      `horário de ${daysOfWeek[schedule.dayOfWeek]} (${schedule.startTime} - ${schedule.endTime})`,
+      undefined
+    );
+    
+    if (result.isConfirmed) {
+      try {
+        await schedulesAPI.deletePermanent(schedule._id);
+        showSuccess('Sucesso!', 'Horário excluído permanentemente!');
+        loadData();
+      } catch (error) {
+        console.error('Erro ao excluir horário permanentemente:', error);
+        showError('Erro', 'Não foi possível excluir o horário permanentemente. Tente novamente.');
       }
     }
   };
@@ -79,11 +103,11 @@ const AdminSchedules: React.FC = () => {
   const handleToggleScheduleActive = async (schedule: Schedule) => {
     try {
       await schedulesAPI.update(schedule._id, { isActive: !schedule.isActive });
-      alert(`Horário ${schedule.isActive ? 'desativado' : 'ativado'} com sucesso!`);
+      showSuccess('Sucesso!', `Horário ${schedule.isActive ? 'desativado' : 'ativado'} com sucesso!`);
       loadData();
     } catch (error) {
       console.error('Erro ao alterar status do horário:', error);
-      alert('Erro ao alterar status do horário');
+      showError('Erro', 'Não foi possível alterar o status do horário. Tente novamente.');
     }
   };
 
@@ -98,14 +122,37 @@ const AdminSchedules: React.FC = () => {
   };
 
   const handleDeleteUnavailability = async (unavailability: Unavailability) => {
-    if (window.confirm('Tem certeza que deseja remover esta indisponibilidade?')) {
+    const result = await showDeleteConfirmation(
+      'esta indisponibilidade',
+      'Tem certeza que deseja remover esta indisponibilidade?<br><small>Esta ação não pode ser desfeita.</small>'
+    );
+    
+    if (result.isConfirmed) {
       try {
         await unavailabilitiesAPI.delete(unavailability._id);
-        alert('Indisponibilidade removida com sucesso!');
+        showSuccess('Sucesso!', 'Indisponibilidade removida com sucesso!');
         loadData();
       } catch (error) {
         console.error('Erro ao remover indisponibilidade:', error);
-        alert('Erro ao remover indisponibilidade');
+        showError('Erro', 'Não foi possível remover a indisponibilidade. Tente novamente.');
+      }
+    }
+  };
+
+  const handlePermanentDeleteUnavailability = async (unavailability: Unavailability) => {
+    const result = await showPermanentDeleteConfirmation(
+      `indisponibilidade de ${formatDate(unavailability.date)} (${unavailability.startTime} - ${unavailability.endTime})`,
+      undefined
+    );
+    
+    if (result.isConfirmed) {
+      try {
+        await unavailabilitiesAPI.deletePermanent(unavailability._id);
+        showSuccess('Sucesso!', 'Indisponibilidade excluída permanentemente!');
+        loadData();
+      } catch (error) {
+        console.error('Erro ao excluir indisponibilidade permanentemente:', error);
+        showError('Erro', 'Não foi possível excluir a indisponibilidade permanentemente. Tente novamente.');
       }
     }
   };
@@ -114,16 +161,16 @@ const AdminSchedules: React.FC = () => {
     try {
       if (editingSchedule) {
         await schedulesAPI.update(editingSchedule._id, data);
-        alert('Horário atualizado com sucesso!');
+        showSuccess('Sucesso!', 'Horário atualizado com sucesso!');
       } else {
         await schedulesAPI.create(data);
-        alert('Horário criado com sucesso!');
+        showSuccess('Sucesso!', 'Horário criado com sucesso!');
       }
       setShowScheduleForm(false);
       loadData();
     } catch (error: any) {
       console.error('Erro ao salvar horário:', error);
-      alert(error.response?.data?.message || 'Erro ao salvar horário');
+      showError('Erro ao salvar horário', error.response?.data?.message || 'Verifique os dados e tente novamente.');
     }
   };
 
@@ -131,16 +178,16 @@ const AdminSchedules: React.FC = () => {
     try {
       if (editingUnavailability) {
         await unavailabilitiesAPI.update(editingUnavailability._id, data);
-        alert('Indisponibilidade atualizada com sucesso!');
+        showSuccess('Sucesso!', 'Indisponibilidade atualizada com sucesso!');
       } else {
         await unavailabilitiesAPI.create(data);
-        alert('Indisponibilidade criada com sucesso!');
+        showSuccess('Sucesso!', 'Indisponibilidade criada com sucesso!');
       }
       setShowUnavailabilityForm(false);
       loadData();
     } catch (error: any) {
       console.error('Erro ao salvar indisponibilidade:', error);
-      alert(error.response?.data?.message || 'Erro ao salvar indisponibilidade');
+      showError('Erro ao salvar indisponibilidade', error.response?.data?.message || 'Verifique os dados e tente novamente.');
     }
   };
 
@@ -164,7 +211,36 @@ const AdminSchedules: React.FC = () => {
   return (
     <div className="admin-schedules-page">
       <div className="page-header">
-        <h1>Gerenciar Horários</h1>
+        <div className="header-content">
+          <h1>Gerenciar Horários</h1>
+          <div className="schedules-stats">
+            {activeTab === 'schedules' ? (
+              <>
+                <span className="stat-item">
+                  <strong>{schedules.filter(s => s.isActive).length}</strong> horários ativos
+                </span>
+                <span className="stat-item">
+                  <strong>{schedules.filter(s => !s.isActive).length}</strong> inativos
+                </span>
+                <span className="stat-item">
+                  <strong>{schedules.length}</strong> total
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="stat-item">
+                  <strong>{unavailabilities.filter(u => u.isActive).length}</strong> indisponibilidades ativas
+                </span>
+                <span className="stat-item">
+                  <strong>{unavailabilities.filter(u => !u.isActive).length}</strong> inativas
+                </span>
+                <span className="stat-item">
+                  <strong>{unavailabilities.length}</strong> total
+                </span>
+              </>
+            )}
+          </div>
+        </div>
         <div className="header-actions">
           {activeTab === 'schedules' ? (
             <button className="btn btn-primary" onClick={handleCreateSchedule}>
@@ -233,6 +309,15 @@ const AdminSchedules: React.FC = () => {
                         >
                           <Trash2 size={16} />
                         </button>
+                        {!schedule.isActive && (
+                          <button
+                            className="btn-icon permanent-delete"
+                            onClick={() => handlePermanentDeleteSchedule(schedule)}
+                            title="Excluir Permanentemente"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -284,6 +369,15 @@ const AdminSchedules: React.FC = () => {
                         >
                           <Trash2 size={16} />
                         </button>
+                        {!unavailability.isActive && (
+                          <button
+                            className="btn-icon permanent-delete"
+                            onClick={() => handlePermanentDeleteUnavailability(unavailability)}
+                            title="Excluir Permanentemente"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -320,6 +414,42 @@ const AdminSchedules: React.FC = () => {
             </div>
           )}
         </>
+      )}
+
+      {/* Botão Flutuante para Adicionar Mais */}
+      {((activeTab === 'schedules' && schedules.length > 0) || (activeTab === 'unavailabilities' && unavailabilities.length > 0)) && (
+        <button 
+          className="floating-add-btn" 
+          onClick={activeTab === 'schedules' ? handleCreateSchedule : handleCreateUnavailability}
+          title={activeTab === 'schedules' ? 'Adicionar Novo Horário' : 'Adicionar Nova Indisponibilidade'}
+        >
+          <Plus size={24} />
+        </button>
+      )}
+
+      {/* Seção de Ações Rápidas */}
+      {activeTab === 'schedules' && schedules.length > 0 && (
+        <div className="quick-actions">
+          <button 
+            className="btn btn-primary btn-wide" 
+            onClick={handleCreateSchedule}
+          >
+            <Plus size={18} />
+            Adicionar Mais Horários
+          </button>
+        </div>
+      )}
+
+      {activeTab === 'unavailabilities' && unavailabilities.length > 0 && (
+        <div className="quick-actions">
+          <button 
+            className="btn btn-primary btn-wide" 
+            onClick={handleCreateUnavailability}
+          >
+            <Plus size={18} />
+            Adicionar Mais Indisponibilidades
+          </button>
+        </div>
       )}
 
       {showScheduleForm && (

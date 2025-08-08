@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { authAPI } from '../../services/api';
 import type { User as UserType } from '../../types';
+import { showError, showSuccess, showWarning, showUploadProgress, updateUploadProgress, closeLoading } from '../../utils/alerts';
 import './styles.css';
 
 interface EditProfileProps {
@@ -48,13 +49,13 @@ const EditProfile: React.FC<EditProfileProps> = ({ user, onClose, onUpdate }) =>
     if (file) {
       // Validar tipo de arquivo
       if (!file.type.startsWith('image/')) {
-        alert('Por favor, selecione apenas arquivos de imagem');
+        showWarning('Arquivo inválido', 'Por favor, selecione apenas arquivos de imagem (JPG, PNG, etc.)');
         return;
       }
 
       // Validar tamanho (5MB)
       if (file.size > 5 * 1024 * 1024) {
-        alert('O arquivo deve ter no máximo 5MB');
+        showWarning('Arquivo muito grande', 'O arquivo deve ter no máximo 5MB. Tente comprimir a imagem.');
         return;
       }
 
@@ -89,10 +90,10 @@ const EditProfile: React.FC<EditProfileProps> = ({ user, onClose, onUpdate }) =>
       onClose();
 
       // Feedback visual
-      alert('Perfil atualizado com sucesso!');
+      showSuccess('Perfil Atualizado!', 'Suas informações foram atualizadas com sucesso!');
     } catch (error: any) {
       console.error('Erro ao atualizar perfil:', error);
-      alert(error.response?.data?.message || 'Erro ao atualizar perfil');
+      showError('Erro ao atualizar perfil', error.response?.data?.message || 'Verifique os dados e tente novamente.');
     } finally {
       setLoading(false);
     }

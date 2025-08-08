@@ -122,6 +122,11 @@ export const servicesAPI = {
     return response.data;
   },
 
+  deletePermanent: async (id: string): Promise<{ message: string }> => {
+    const response = await api.delete(`/services/${id}/permanent`);
+    return response.data;
+  },
+
   // Admin endpoints
   getAllAdmin: async (): Promise<Service[]> => {
     const response = await api.get('/services/admin');
@@ -231,6 +236,11 @@ export const schedulesAPI = {
     return response.data;
   },
 
+  deletePermanent: async (id: string): Promise<{ message: string }> => {
+    const response = await api.delete(`/schedules/${id}/permanent`);
+    return response.data;
+  },
+
   getAvailableSlots: async (date: string): Promise<{ availableSlots: string[] }> => {
     const response = await api.get(`/schedules/available-slots/${date}`);
     return response.data;
@@ -262,6 +272,11 @@ export const unavailabilitiesAPI = {
 
   delete: async (id: string): Promise<{ message: string }> => {
     const response = await api.delete(`/schedules/unavailabilities/${id}`);
+    return response.data;
+  },
+
+  deletePermanent: async (id: string): Promise<{ message: string }> => {
+    const response = await api.delete(`/schedules/unavailabilities/${id}/permanent`);
     return response.data;
   },
 };
