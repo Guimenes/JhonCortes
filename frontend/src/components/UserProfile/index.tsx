@@ -15,6 +15,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { appointmentsAPI } from '../../services/api';
 import EditProfile from '../EditProfile';
+import BookingWizard from '../BookingWizard';
 import type { Appointment, User as UserType } from '../../types';
 import './styles.css';
 
@@ -29,6 +30,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showBookingWizard, setShowBookingWizard] = useState(false);
   const [currentUser, setCurrentUser] = useState(user);
 
   useEffect(() => {
@@ -217,7 +219,10 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
               <div className="empty-state">
                 <Calendar size={48} />
                 <p>Você não possui agendamentos ativos</p>
-                <button className="btn btn-primary">
+                <button 
+                  className="btn btn-primary"
+                  onClick={() => setShowBookingWizard(true)}
+                >
                   Agendar Horário
                 </button>
               </div>
@@ -338,6 +343,18 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
           user={currentUser}
           onClose={() => setShowEditProfile(false)}
           onUpdate={handleProfileUpdate}
+        />
+      )}
+
+      {showBookingWizard && (
+        <BookingWizard
+          onClose={() => setShowBookingWizard(false)}
+          onSuccess={() => {
+            setShowBookingWizard(false);
+            if (activeTab === 'appointments') {
+              loadAppointments();
+            }
+          }}
         />
       )}
     </>

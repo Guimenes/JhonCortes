@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Menu, X, Scissors, Phone, MapPin, Clock, ChevronDown } from 'lucide-react';
 import './Header.css';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import UserAvatar from '../UserAvatar';
 
@@ -13,6 +13,7 @@ const Header: React.FC<HeaderProps> = ({ onBookingClick }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAdminDropdownOpen, setIsAdminDropdownOpen] = useState(false);
   const { user } = useAuth();
+  const navigate = useNavigate();
   const dropdownRef = useRef<HTMLLIElement>(null);
 
   // Fechar dropdown ao clicar fora
@@ -37,6 +38,14 @@ const Header: React.FC<HeaderProps> = ({ onBookingClick }) => {
       element.scrollIntoView({ behavior: 'smooth' });
     }
     setIsMenuOpen(false);
+  };
+
+  const handleBookingClick = () => {
+    if (user) {
+      navigate('/booking');
+    } else if (onBookingClick) {
+      onBookingClick();
+    }
   };
 
   return (
@@ -119,7 +128,7 @@ const Header: React.FC<HeaderProps> = ({ onBookingClick }) => {
             <div className="header-cta">
               <button 
                 className="btn btn-primary"
-                onClick={onBookingClick}
+                onClick={handleBookingClick}
               >
                 Agendar Horário
               </button>
@@ -166,7 +175,7 @@ const Header: React.FC<HeaderProps> = ({ onBookingClick }) => {
             <li>
               <button 
                 className="btn btn-primary w-full"
-                onClick={onBookingClick}
+                onClick={handleBookingClick}
               >
                 Agendar Horário
               </button>

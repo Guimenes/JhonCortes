@@ -1,6 +1,7 @@
 import express from 'express';
 import Appointment from '../models/Appointment';
 import Service from '../models/Service';
+import { Schedule, Unavailability } from '../models/Schedule';
 import { authenticateToken, requireAdmin, AuthRequest } from '../middleware/auth';
 
 const router = express.Router();
@@ -60,7 +61,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
     const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
 
     // Check for conflicts
-    const appointmentDate = new Date(date);
+    const appointmentDate = new Date(date + 'T12:00:00');
     const existingAppointment = await Appointment.findOne({
       date: appointmentDate,
       status: { $in: ['pendente', 'confirmado'] },
@@ -168,52 +169,170 @@ router.delete('/:id', authenticateToken, async (req: AuthRequest, res) => {
 router.get('/available-slots/:date', async (req, res) => {
   try {
     const { date } = req.params;
-    const appointmentDate = new Date(date);
+    // Criar data no fuso horário local para evitar problemas de timezone
+    const appointmentDate = new Date(date + 'T12:00:00');
+    const dayOfWeek = appointmentDate.getDay();
 
-    // Get all appointments for this date
+    // Buscar horário de funcionamento para o dia da semana
+    const schedule = await Schedule.findOne({ dayOfWeek, isActive: true });
+    if (!schedule) {
+      console.log(`No schedule found for dayOfWeek: ${dayOfWeek}`);
+      return res.json({ availableSlots: [] });
+    }
+
+    console.log(`Schedule found: ${schedule.startTime} - ${schedule.endTime}`);
+
+    // Buscar indisponibilidades para a data específica
+    const searchDate = new Date(date + 'T12:00:00');
+    const startOfDay = new Date(searchDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(searchDate);
+    endOfDay.setHours(23, 59, 59, 999);
+    
+    const unavailabilities = await Unavailability.find({
+      date: {
+        $gte: startOfDay,
+        $lt: endOfDay
+      },
+      isActive: true
+    });
+
+    console.log(`Found ${unavailabilities.length} unavailabilities`);
+
+    // Buscar agendamentos existentes para a data
     const appointments = await Appointment.find({
       date: appointmentDate,
       status: { $in: ['pendente', 'confirmado'] }
     }).select('startTime endTime');
 
-    // Define business hours (9:00 - 18:00)
-    const businessStart = '09:00';
-    const businessEnd = '18:00';
-    const slotDuration = 30; // 30 minutes slots
+    console.log(`Found ${appointments.length} existing appointments`);
 
-    const availableSlots = [];
-    let currentTime = businessStart;
-
-    while (currentTime < businessEnd) {
-      const currentHour = parseInt(currentTime.split(':')[0]);
-      const currentMinute = parseInt(currentTime.split(':')[1]);
-      const totalCurrentMinutes = currentHour * 60 + currentMinute;
-      const totalSlotEndMinutes = totalCurrentMinutes + slotDuration;
+    // Gerar slots disponíveis (a cada 30 minutos)
+    const slots = [];
+    const startTime = new Date(`1970-01-01T${schedule.startTime}:00`);
+    const endTime = new Date(`1970-01-01T${schedule.endTime}:00`);
+    
+    console.log(`Generating slots from ${schedule.startTime} to ${schedule.endTime}`);
+    
+    let currentTime = new Date(startTime);
+    
+    // Loop deve parar quando o PRÓXIMO slot ultrapassar o horário de fim
+    while (currentTime < endTime) {
+      const timeString = currentTime.toTimeString().slice(0, 5);
       
-      const slotEndHour = Math.floor(totalSlotEndMinutes / 60);
-      const slotEndMinute = totalSlotEndMinutes % 60;
-      const slotEnd = `${slotEndHour.toString().padStart(2, '0')}:${slotEndMinute.toString().padStart(2, '0')}`;
-
-      // Check if this slot conflicts with any appointment
-      const hasConflict = appointments.some(appointment => {
-        return currentTime < appointment.endTime && slotEnd > appointment.startTime;
+      // Calcular o fim do slot (30 minutos depois)
+      const slotEnd = new Date(currentTime.getTime() + 30 * 60000);
+      const slotEndString = slotEnd.toTimeString().slice(0, 5);
+      
+      // Se o slot ultrapassa o horário de funcionamento, parar
+      if (slotEnd > endTime) {
+        console.log(`Slot ${timeString}-${slotEndString} exceeds end time ${schedule.endTime}, stopping`);
+        break;
+      }
+      
+      // Verificar se o horário não está em uma indisponibilidade
+      const isUnavailable = unavailabilities.some((unavail: any) => {
+        const unavailStart = new Date(`1970-01-01T${unavail.startTime}:00`);
+        const unavailEnd = new Date(`1970-01-01T${unavail.endTime}:00`);
+        return currentTime >= unavailStart && currentTime < unavailEnd;
       });
 
-      if (!hasConflict && slotEnd <= businessEnd) {
-        availableSlots.push(currentTime);
+      // Verificar se não há conflito com agendamentos existentes
+      const hasAppointmentConflict = appointments.some(appointment => {
+        return timeString < appointment.endTime && slotEndString > appointment.startTime;
+      });
+
+      console.log(`Checking slot ${timeString}-${slotEndString}: unavailable=${isUnavailable}, conflict=${hasAppointmentConflict}`);
+
+      if (!isUnavailable && !hasAppointmentConflict) {
+        slots.push(timeString);
       }
 
-      // Move to next slot
-      const nextTotalMinutes = totalCurrentMinutes + slotDuration;
-      const nextHour = Math.floor(nextTotalMinutes / 60);
-      const nextMinute = nextTotalMinutes % 60;
-      currentTime = `${nextHour.toString().padStart(2, '0')}:${nextMinute.toString().padStart(2, '0')}`;
+      currentTime.setMinutes(currentTime.getMinutes() + 30);
     }
 
-    res.json({ availableSlots });
+    console.log(`Generated ${slots.length} available slots:`, slots);
+    res.json({ availableSlots: slots });
   } catch (error: any) {
     res.status(500).json({ 
       message: 'Erro ao buscar horários disponíveis',
+      error: error.message 
+    });
+  }
+});
+
+// Check if a date has unavailabilities or is not a working day
+router.get('/check-date/:date', async (req, res) => {
+  try {
+    const { date } = req.params;
+    const appointmentDate = new Date(date + 'T12:00:00');
+    const dayOfWeek = appointmentDate.getDay();
+
+    // Check if it's a working day
+    const schedule = await Schedule.findOne({ dayOfWeek, isActive: true });
+    const isWorkingDay = !!schedule;
+
+    // Check for unavailabilities
+    const startOfDay = new Date(appointmentDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(appointmentDate);
+    endOfDay.setHours(23, 59, 59, 999);
+    
+    const unavailabilities = await Unavailability.find({
+      date: {
+        $gte: startOfDay,
+        $lt: endOfDay
+      },
+      isActive: true
+    });
+
+    const hasUnavailability = unavailabilities.length > 0;
+    
+    // Check if the entire day is blocked by unavailabilities
+    let isCompletelyBlocked = false;
+    if (schedule && hasUnavailability) {
+      const scheduleStart = new Date(`1970-01-01T${schedule.startTime}:00`);
+      const scheduleEnd = new Date(`1970-01-01T${schedule.endTime}:00`);
+      const scheduleDuration = scheduleEnd.getTime() - scheduleStart.getTime();
+      
+      // Calculate total unavailable time, considering overlaps
+      const sortedUnavailabilities = unavailabilities
+        .map(u => ({
+          start: new Date(`1970-01-01T${u.startTime}:00`).getTime(),
+          end: new Date(`1970-01-01T${u.endTime}:00`).getTime()
+        }))
+        .sort((a, b) => a.start - b.start);
+      
+      let totalUnavailableDuration = 0;
+      let lastEnd = 0;
+      
+      for (const unavail of sortedUnavailabilities) {
+        const start = Math.max(unavail.start, lastEnd);
+        const end = unavail.end;
+        
+        if (start < end) {
+          totalUnavailableDuration += end - start;
+          lastEnd = end;
+        }
+      }
+      
+      // Consider completely blocked if 90% or more of the day is unavailable
+      isCompletelyBlocked = totalUnavailableDuration >= (scheduleDuration * 0.9);
+    }
+
+    res.json({
+      isWorkingDay,
+      hasUnavailability,
+      isCompletelyBlocked,
+      unavailabilities: unavailabilities.map(u => ({
+        startTime: u.startTime,
+        endTime: u.endTime,
+        reason: u.reason
+      }))
+    });
+  } catch (error: any) {
+    res.status(500).json({ 
+      message: 'Erro ao verificar data',
       error: error.message 
     });
   }

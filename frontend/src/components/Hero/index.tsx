@@ -1,5 +1,7 @@
 import React from 'react';
 import { Star, Award, Users, Calendar } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
 import './Hero.css';
 
 interface HeroProps {
@@ -7,6 +9,16 @@ interface HeroProps {
 }
 
 const Hero: React.FC<HeroProps> = ({ onBookingClick }) => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const handleBookingClick = () => {
+    if (user) {
+      navigate('/booking');
+    } else if (onBookingClick) {
+      onBookingClick();
+    }
+  };
   return (
     <section id="inicio" className="hero">
       <div className="hero-background">
@@ -64,7 +76,7 @@ const Hero: React.FC<HeroProps> = ({ onBookingClick }) => {
             <div className="hero-actions">
               <button 
                 className="btn btn-primary btn-lg"
-                onClick={onBookingClick}
+                onClick={handleBookingClick}
               >
                 <Calendar className="btn-icon" />
                 Agendar Meu Horário

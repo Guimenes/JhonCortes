@@ -165,6 +165,20 @@ export const appointmentsAPI = {
     const response = await api.get(`/appointments/available-slots/${date}`);
     return response.data;
   },
+
+  checkDate: async (date: string): Promise<{
+    isWorkingDay: boolean;
+    hasUnavailability: boolean;
+    isCompletelyBlocked: boolean;
+    unavailabilities: Array<{
+      startTime: string;
+      endTime: string;
+      reason: string;
+    }>;
+  }> => {
+    const response = await api.get(`/appointments/check-date/${date}`);
+    return response.data;
+  },
 };
 
 // Users endpoints (Admin only)
