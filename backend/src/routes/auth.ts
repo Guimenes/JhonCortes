@@ -2,6 +2,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
+import { uploadAvatar, deleteOldAvatar } from '../middleware/upload';
 
 const router = express.Router();
 
@@ -195,11 +196,12 @@ router.get('/profile', authenticateToken, async (req: AuthRequest, res) => {
     res.json({
       success: true,
       user: {
-  _id: user._id,
+        _id: user._id,
         name: user.name,
         email: user.email,
         phone: user.phone,
         role: user.role,
+        avatar: user.avatar,
         createdAt: user.createdAt
       }
     });
@@ -231,6 +233,7 @@ router.get('/me', authenticateToken, async (req: AuthRequest, res) => {
         email: user.email,
         phone: user.phone,
         role: user.role,
+        avatar: user.avatar,
         createdAt: user.createdAt
       }
     });
@@ -244,7 +247,7 @@ router.get('/me', authenticateToken, async (req: AuthRequest, res) => {
 });
 
 // Atualizar perfil do usuário
-router.put('/profile', authenticateToken, async (req: AuthRequest, res) => {
+router.put('/profile', authenticateToken, uploadAvatar.single('avatar'), async (req: AuthRequest, res) => {
   try {
     const { name, phone } = req.body;
     
@@ -256,6 +259,17 @@ router.put('/profile', authenticateToken, async (req: AuthRequest, res) => {
       });
     }
 
+    // Se uma nova imagem foi enviada
+    if (req.file) {
+      // Deletar avatar antigo se existir
+      if (user.avatar) {
+        deleteOldAvatar(user.avatar);
+      }
+      
+      // Salvar caminho do novo avatar
+      user.avatar = `/uploads/avatars/${req.file.filename}`;
+    }
+
     user.name = name || user.name;
     user.phone = phone || user.phone;
     
@@ -265,18 +279,72 @@ router.put('/profile', authenticateToken, async (req: AuthRequest, res) => {
       success: true,
       message: 'Perfil atualizado com sucesso',
       user: {
-  _id: user._id,
+        _id: user._id,
         name: user.name,
         email: user.email,
         phone: user.phone,
-        role: user.role
+        role: user.role,
+        avatar: user.avatar
       }
     });
   } catch (error) {
     console.error('Erro ao atualizar perfil:', error);
+    
+    // Se houve erro e um arquivo foi enviado, deletá-lo
+    if (req.file) {
+      deleteOldAvatar(`/uploads/avatars/${req.file.filename}`);
+    }
+    
     res.status(500).json({ 
       success: false, 
       message: 'Erro interno do servidor' 
+    });
+  }
+});
+
+// Endpoint específico para upload de avatar
+router.post('/upload-avatar', authenticateToken, uploadAvatar.single('avatar'), async (req: AuthRequest, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'Nenhum arquivo enviado'
+      });
+    }
+
+    const user = await User.findById(req.user?._id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuário não encontrado'
+      });
+    }
+
+    // Deletar avatar antigo se existir
+    if (user.avatar) {
+      deleteOldAvatar(user.avatar);
+    }
+
+    // Salvar caminho do novo avatar
+    user.avatar = `/uploads/avatars/${req.file.filename}`;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Avatar atualizado com sucesso',
+      avatar: user.avatar
+    });
+  } catch (error) {
+    console.error('Erro ao fazer upload do avatar:', error);
+    
+    // Se houve erro e um arquivo foi enviado, deletá-lo
+    if (req.file) {
+      deleteOldAvatar(`/uploads/avatars/${req.file.filename}`);
+    }
+    
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor'
     });
   }
 });

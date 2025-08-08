@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Menu, X, Scissors, Phone, MapPin, Clock } from 'lucide-react';
 import './Header.css';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import UserAvatar from '../UserAvatar';
 
 interface HeaderProps {
   onBookingClick?: () => void;
@@ -10,8 +11,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onBookingClick }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -91,10 +91,7 @@ const Header: React.FC<HeaderProps> = ({ onBookingClick }) => {
               
               {user ? (
                 <div className="user-section">
-                  <span className="user-greeting">Olá, <strong>{user.name.split(' ')[0]}</strong></span>
-                  <button className="btn btn-logout" onClick={() => { logout(); navigate('/'); }}>
-                    Sair
-                  </button>
+                  <UserAvatar user={user} />
                 </div>
               ) : (
                 <div className="auth-buttons">
@@ -137,13 +134,7 @@ const Header: React.FC<HeaderProps> = ({ onBookingClick }) => {
             {user ? (
               <li>
                 <div className="mobile-user-info">
-                  <span className="mobile-user-greeting">Olá, <strong>{user.name.split(' ')[0]}</strong></span>
-                  <button 
-                    className="btn btn-logout w-full mt-4"
-                    onClick={() => { logout(); navigate('/'); setIsMenuOpen(false); }}
-                  >
-                    Sair
-                  </button>
+                  <UserAvatar user={user} />
                 </div>
               </li>
             ) : (

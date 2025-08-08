@@ -63,6 +63,27 @@ export const authAPI = {
     const response = await api.put('/auth/profile', data);
     return response.data;
   },
+
+  uploadAvatar: async (file: File): Promise<{ message: string; avatar: string }> => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    
+    const response = await api.post('/auth/upload-avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  updateProfileWithAvatar: async (data: FormData): Promise<{ message: string; user: User }> => {
+    const response = await api.put('/auth/profile', data, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
 };
 
 // Services endpoints
