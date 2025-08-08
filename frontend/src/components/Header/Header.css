@@ -153,43 +153,72 @@
 .auth-buttons {
   display: flex;
   align-items: center;
-  gap: var(--spacing-2);
   padding-left: var(--spacing-4);
   border-left: 1px solid rgba(184, 134, 11, 0.3);
   margin-left: var(--spacing-4);
 }
 
-.btn-login {
-  background: transparent;
-  color: var(--primary-gold);
-  border: 1px solid var(--primary-gold);
-  padding: var(--spacing-2) var(--spacing-4);
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  transition: all var(--transition-fast);
-}
-
-.btn-login:hover {
-  background: var(--primary-gold);
-  color: var(--white);
-  transform: translateY(-1px);
-}
-
-.btn-register {
-  background: var(--primary-yellow);
+/* Botão de login moderno */
+.btn-login-modern {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  background: linear-gradient(135deg, var(--primary-yellow) 0%, var(--primary-gold) 100%);
   color: var(--primary-black);
-  border: 1px solid var(--primary-yellow);
-  padding: var(--spacing-2) var(--spacing-4);
+  border: none;
+  padding: var(--spacing-3) var(--spacing-6);
+  border-radius: 50px;
   font-size: var(--font-size-sm);
   font-weight: 600;
+  text-decoration: none;
   transition: all var(--transition-fast);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  animation: subtle-pulse 3s ease-in-out infinite;
 }
 
-.btn-register:hover {
-  background: var(--dark-yellow);
-  border-color: var(--dark-yellow);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+@keyframes subtle-pulse {
+  0%, 100% {
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 20px rgba(255, 215, 0, 0.5);
+  }
+}
+
+.btn-login-modern::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.btn-login-modern:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 215, 0, 0.6);
+  background: linear-gradient(135deg, #FFE55C 0%, #DAA520 100%);
+  animation: none; /* Remove o pulse no hover */
+}
+
+.btn-login-modern:hover::before {
+  left: 100%;
+}
+
+.btn-login-modern:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+}
+
+.login-icon {
+  font-size: 1.1em;
+  filter: grayscale(1) brightness(0.3);
 }
 
 .btn-logout {
@@ -296,6 +325,12 @@
 
   .contact-item {
     font-size: var(--font-size-xs);
+  }
+
+  .btn-login-modern {
+    padding: var(--spacing-2) var(--spacing-4);
+    font-size: var(--font-size-xs);
+    border-radius: 40px;
   }
 }
 

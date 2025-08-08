@@ -98,8 +98,10 @@ const Header: React.FC<HeaderProps> = ({ onBookingClick }) => {
                 </div>
               ) : (
                 <div className="auth-buttons">
-                  <Link className="btn btn-login" to="/login">Entrar</Link>
-                  <Link className="btn btn-register" to="/register">Cadastrar</Link>
+                  <Link className="btn btn-login-modern" to="/login">
+                    <span className="login-icon">👤</span>
+                    Entrar
+                  </Link>
                 </div>
               )}
             </div>
@@ -145,26 +147,16 @@ const Header: React.FC<HeaderProps> = ({ onBookingClick }) => {
                 </div>
               </li>
             ) : (
-              <>
-                <li>
-                  <Link 
-                    to="/login"
-                    className="btn btn-login w-full mt-4" 
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Entrar
-                  </Link>
-                </li>
-                <li>
-                  <Link 
-                    to="/register"
-                    className="btn btn-register w-full mt-2" 
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Cadastrar
-                  </Link>
-                </li>
-              </>
+              <li>
+                <Link 
+                  to="/login"
+                  className="btn btn-login-modern w-full mt-4" 
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <span className="login-icon">👤</span>
+                  Entrar
+                </Link>
+              </li>
             )}
           </ul>
         </div>

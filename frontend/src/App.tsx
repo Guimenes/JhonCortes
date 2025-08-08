@@ -2,9 +2,8 @@ import { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Header from './components/Header'
 import Hero from './components/Hero'
+import AuthPage from './pages/Auth'
 import './App.css'
-import LoginPage from './pages/Login'
-import RegisterPage from './pages/Register'
 import { AuthProvider } from './hooks/useAuth'
 
 function App() {
@@ -55,8 +54,8 @@ function App() {
               </section>
             </main>
           } />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/login" element={<AuthPage />} />
+          <Route path="/register" element={<AuthPage />} />
         </Routes>
         
         {/* Modal de agendamento - placeholder */}
