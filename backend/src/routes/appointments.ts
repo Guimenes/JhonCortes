@@ -169,6 +169,8 @@ router.delete('/:id', authenticateToken, async (req: AuthRequest, res) => {
 router.get('/available-slots/:date', async (req, res) => {
   try {
     const { date } = req.params;
+    const { serviceId } = req.query;
+    
     // Criar data no fuso horário local para evitar problemas de timezone
     const appointmentDate = new Date(date + 'T12:00:00');
     const dayOfWeek = appointmentDate.getDay();
@@ -180,7 +182,16 @@ router.get('/available-slots/:date', async (req, res) => {
       return res.json({ availableSlots: [] });
     }
 
-    console.log(`Schedule found: ${schedule.startTime} - ${schedule.endTime}`);
+    // Buscar informações do serviço para obter a duração
+    let serviceDuration = 30; // duração padrão em minutos
+    if (serviceId) {
+      const service = await Service.findById(serviceId);
+      if (service) {
+        serviceDuration = service.duration;
+      }
+    }
+
+    console.log(`Schedule found: ${schedule.startTime} - ${schedule.endTime}, Service duration: ${serviceDuration} minutes`);
 
     // Buscar indisponibilidades para a data específica
     const searchDate = new Date(date + 'T12:00:00');
@@ -207,39 +218,43 @@ router.get('/available-slots/:date', async (req, res) => {
 
     console.log(`Found ${appointments.length} existing appointments`);
 
-    // Gerar slots disponíveis (a cada 30 minutos)
+    // Gerar slots disponíveis baseado na duração do serviço
     const slots = [];
     const startTime = new Date(`1970-01-01T${schedule.startTime}:00`);
     const endTime = new Date(`1970-01-01T${schedule.endTime}:00`);
     
-    console.log(`Generating slots from ${schedule.startTime} to ${schedule.endTime}`);
+    console.log(`Generating slots from ${schedule.startTime} to ${schedule.endTime} with ${serviceDuration} minute intervals`);
     
     let currentTime = new Date(startTime);
     
-    // Loop deve parar quando o PRÓXIMO slot ultrapassar o horário de fim
+    // Loop deve parar quando o slot + duração do serviço ultrapassar o horário de fim
     while (currentTime < endTime) {
       const timeString = currentTime.toTimeString().slice(0, 5);
       
-      // Calcular o fim do slot (30 minutos depois)
-      const slotEnd = new Date(currentTime.getTime() + 30 * 60000);
+      // Calcular o fim do slot baseado na duração do serviço
+      const slotEnd = new Date(currentTime.getTime() + serviceDuration * 60000);
       const slotEndString = slotEnd.toTimeString().slice(0, 5);
       
-      // Se o slot ultrapassa o horário de funcionamento, parar
+      // Se o slot + duração ultrapassa o horário de funcionamento, parar
       if (slotEnd > endTime) {
         console.log(`Slot ${timeString}-${slotEndString} exceeds end time ${schedule.endTime}, stopping`);
         break;
       }
       
-      // Verificar se o horário não está em uma indisponibilidade
+      // Verificar se todo o período do serviço não está em indisponibilidade
       const isUnavailable = unavailabilities.some((unavail: any) => {
         const unavailStart = new Date(`1970-01-01T${unavail.startTime}:00`);
         const unavailEnd = new Date(`1970-01-01T${unavail.endTime}:00`);
-        return currentTime >= unavailStart && currentTime < unavailEnd;
+        // Se qualquer parte do slot conflita com indisponibilidade
+        return !(slotEnd <= unavailStart || currentTime >= unavailEnd);
       });
 
       // Verificar se não há conflito com agendamentos existentes
       const hasAppointmentConflict = appointments.some(appointment => {
-        return timeString < appointment.endTime && slotEndString > appointment.startTime;
+        const appointmentStart = new Date(`1970-01-01T${appointment.startTime}:00`);
+        const appointmentEnd = new Date(`1970-01-01T${appointment.endTime}:00`);
+        // Se qualquer parte do slot conflita com agendamento existente
+        return !(slotEnd <= appointmentStart || currentTime >= appointmentEnd);
       });
 
       console.log(`Checking slot ${timeString}-${slotEndString}: unavailable=${isUnavailable}, conflict=${hasAppointmentConflict}`);
@@ -248,7 +263,8 @@ router.get('/available-slots/:date', async (req, res) => {
         slots.push(timeString);
       }
 
-      currentTime.setMinutes(currentTime.getMinutes() + 30);
+      // Avançar em intervalos menores (15 minutos) para dar mais opções de horário
+      currentTime.setMinutes(currentTime.getMinutes() + 15);
     }
 
     console.log(`Generated ${slots.length} available slots:`, slots);
@@ -320,10 +336,59 @@ router.get('/check-date/:date', async (req, res) => {
       isCompletelyBlocked = totalUnavailableDuration >= (scheduleDuration * 0.9);
     }
 
+    // Check if all time slots are occupied by appointments
+    let hasAvailableSlots = true;
+    if (schedule && !isCompletelyBlocked) {
+      // Get all existing appointments for the date
+      const appointments = await Appointment.find({
+        date: appointmentDate,
+        status: { $in: ['pendente', 'confirmado'] }
+      }).select('startTime endTime');
+
+      // Generate slots with a short duration (15 minutes) to check availability
+      const slots = [];
+      const startTime = new Date(`1970-01-01T${schedule.startTime}:00`);
+      const endTime = new Date(`1970-01-01T${schedule.endTime}:00`);
+      const slotDuration = 15; // Use 15 minutes as minimum slot duration
+      
+      let currentTime = new Date(startTime);
+      
+      while (currentTime < endTime) {
+        const slotEnd = new Date(currentTime.getTime() + slotDuration * 60000);
+        
+        if (slotEnd > endTime) {
+          break;
+        }
+        
+        // Check if this slot conflicts with unavailabilities
+        const isUnavailable = unavailabilities.some((unavail: any) => {
+          const unavailStart = new Date(`1970-01-01T${unavail.startTime}:00`);
+          const unavailEnd = new Date(`1970-01-01T${unavail.endTime}:00`);
+          return !(slotEnd <= unavailStart || currentTime >= unavailEnd);
+        });
+
+        // Check if this slot conflicts with existing appointments
+        const hasAppointmentConflict = appointments.some(appointment => {
+          const appointmentStart = new Date(`1970-01-01T${appointment.startTime}:00`);
+          const appointmentEnd = new Date(`1970-01-01T${appointment.endTime}:00`);
+          return !(slotEnd <= appointmentStart || currentTime >= appointmentEnd);
+        });
+
+        if (!isUnavailable && !hasAppointmentConflict) {
+          slots.push(currentTime.toTimeString().slice(0, 5));
+        }
+
+        currentTime.setMinutes(currentTime.getMinutes() + 15);
+      }
+      
+      hasAvailableSlots = slots.length > 0;
+    }
+
     res.json({
       isWorkingDay,
       hasUnavailability,
       isCompletelyBlocked,
+      hasAvailableSlots,
       unavailabilities: unavailabilities.map(u => ({
         startTime: u.startTime,
         endTime: u.endTime,

@@ -42,10 +42,10 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ onClose, onSuccess }) => 
   }, []);
 
   useEffect(() => {
-    if (bookingData.date) {
+    if (bookingData.date && bookingData.service) {
       loadAvailableSlots();
     }
-  }, [bookingData.date]);
+  }, [bookingData.date, bookingData.service]);
 
   const loadServices = async () => {
     try {
@@ -69,11 +69,11 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ onClose, onSuccess }) => 
   };
 
   const loadAvailableSlots = async () => {
-    if (!bookingData.date) return;
+    if (!bookingData.date || !bookingData.service) return;
     
     try {
       setLoading(true);
-      const data = await appointmentsAPI.getAvailableSlots(bookingData.date);
+      const data = await appointmentsAPI.getAvailableSlots(bookingData.date, bookingData.service._id);
       setAvailableSlots(data.availableSlots);
     } catch (error) {
       showError('Erro', 'Não foi possível carregar os horários disponíveis.');
@@ -264,10 +264,27 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ onClose, onSuccess }) => 
               <h3>Escolha o Horário</h3>
               <p>Selecione um horário disponível para {formatDate(bookingData.date!)}</p>
             </div>
+
+            {bookingData.service && (
+              <div className="selected-service-info">
+                <h4>Serviço selecionado:</h4>
+                <div className="service-details">
+                  <span className="service-name">{bookingData.service.name}</span>
+                  <span className="service-duration">
+                    <Clock size={16} />
+                    {bookingData.service.duration} minutos
+                  </span>
+                  <span className="service-price">
+                    {formatPrice(bookingData.service.price)}
+                  </span>
+                </div>
+              </div>
+            )}
+
             {loading ? (
               <div className="loading-state">
                 <div className="spinner"></div>
-                <p>Carregando horários...</p>
+                <p>Carregando horários disponíveis...</p>
               </div>
             ) : availableSlots.length > 0 ? (
               <>

@@ -145,6 +145,13 @@
   cursor: not-allowed;
 }
 
+.calendar-day.fully-booked {
+  background: #fff7ed;
+  color: #ea580c;
+  border-color: #fed7aa;
+  cursor: not-allowed;
+}
+
 .calendar-day.not-working {
   background: #f5f5f5;
   color: #9ca3af;
@@ -213,6 +220,11 @@
 .legend-color.partially-unavailable {
   background: #fef3c7;
   border-color: #fcd34d;
+}
+
+.legend-color.fully-booked {
+  background: #fff7ed;
+  border-color: #fed7aa;
 }
 
 .legend-color.completely-blocked {

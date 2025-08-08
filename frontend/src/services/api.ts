@@ -161,8 +161,9 @@ export const appointmentsAPI = {
     return response.data;
   },
 
-  getAvailableSlots: async (date: string): Promise<AvailableSlots> => {
-    const response = await api.get(`/appointments/available-slots/${date}`);
+  getAvailableSlots: async (date: string, serviceId?: string): Promise<AvailableSlots> => {
+    const params = serviceId ? { serviceId } : {};
+    const response = await api.get(`/appointments/available-slots/${date}`, { params });
     return response.data;
   },
 
@@ -170,6 +171,7 @@ export const appointmentsAPI = {
     isWorkingDay: boolean;
     hasUnavailability: boolean;
     isCompletelyBlocked: boolean;
+    hasAvailableSlots: boolean;
     unavailabilities: Array<{
       startTime: string;
       endTime: string;

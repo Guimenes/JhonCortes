@@ -8,6 +8,7 @@ interface DateStatus {
   isWorkingDay: boolean;
   hasUnavailability: boolean;
   isCompletelyBlocked: boolean;
+  hasAvailableSlots: boolean;
   unavailabilities: Array<{
     startTime: string;
     endTime: string;
@@ -86,6 +87,7 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({
               isWorkingDay: false,
               hasUnavailability: false,
               isCompletelyBlocked: false,
+              hasAvailableSlots: false,
               unavailabilities: []
             };
           })
@@ -121,6 +123,8 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({
         classes += ' not-working';
       } else if (status.isCompletelyBlocked) {
         classes += ' completely-blocked';
+      } else if (!status.hasAvailableSlots) {
+        classes += ' fully-booked';
       } else if (status.hasUnavailability) {
         classes += ' partially-unavailable';
       } else {
@@ -145,6 +149,10 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({
       return 'Dia completamente indisponível';
     }
     
+    if (!status.hasAvailableSlots) {
+      return 'Todos os horários estão ocupados';
+    }
+    
     if (status.hasUnavailability) {
       const reasons = status.unavailabilities.map(u => u.reason).join(', ');
       return `Indisponibilidades: ${reasons}`;
@@ -159,7 +167,7 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({
     const isPast = date < today;
     const isOutOfRange = date < minDateTime || date > maxDateTime;
     
-    if (isPast || isOutOfRange || !status?.isWorkingDay || status?.isCompletelyBlocked) {
+    if (isPast || isOutOfRange || !status?.isWorkingDay || status?.isCompletelyBlocked || !status?.hasAvailableSlots) {
       return;
     }
     
@@ -203,7 +211,7 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({
           className={dateClass}
           title={dateTitle}
           onClick={() => handleDateClick(date)}
-          disabled={dateClass.includes('disabled') || dateClass.includes('not-working') || dateClass.includes('completely-blocked')}
+          disabled={dateClass.includes('disabled') || dateClass.includes('not-working') || dateClass.includes('completely-blocked') || dateClass.includes('fully-booked')}
         >
           {day}
         </button>
@@ -274,6 +282,10 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({
         <div className="legend-item">
           <div className="legend-color partially-unavailable"></div>
           <span>Parcialmente indisponível</span>
+        </div>
+        <div className="legend-item">
+          <div className="legend-color fully-booked"></div>
+          <span>Completamente ocupado</span>
         </div>
         <div className="legend-item">
           <div className="legend-color completely-blocked"></div>

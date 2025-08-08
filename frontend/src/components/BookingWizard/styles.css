@@ -351,6 +351,51 @@
   margin-top: 20px;
 }
 
+/* Selected Service Info */
+.selected-service-info {
+  background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  border: 1px solid #bae6fd;
+}
+
+.selected-service-info h4 {
+  margin: 0 0 12px 0;
+  color: var(--primary-black);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.selected-service-info .service-details {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.selected-service-info .service-name {
+  font-weight: 600;
+  color: var(--primary-black);
+  font-size: 1.1rem;
+}
+
+.selected-service-info .service-duration {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #0369a1;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.selected-service-info .service-price {
+  color: var(--primary-gold);
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-left: auto;
+}
+
 /* Time Slots */
 .time-slots-grid {
   display: grid;
