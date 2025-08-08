@@ -37,7 +37,17 @@ const userSchema = new Schema<IUser>({
   phone: {
     type: String,
     required: [true, 'Telefone é obrigatório'],
-    trim: true
+    unique: true,
+    trim: true,
+    validate: {
+      validator: function(phone: string) {
+        // Remove todos os caracteres não numéricos para validação
+        const numbers = phone.replace(/\D/g, '');
+        // Aceita telefones com 10 ou 11 dígitos
+        return numbers.length >= 10 && numbers.length <= 11;
+      },
+      message: 'Telefone deve ter 10 ou 11 dígitos'
+    }
   },
   role: {
     type: String,
@@ -58,6 +68,12 @@ const userSchema = new Schema<IUser>({
 
 // Hash password before saving
 userSchema.pre('save', async function(next) {
+  // Normalizar telefone (remover formatação)
+  if (this.isModified('phone')) {
+    const numbers = this.phone.replace(/\D/g, '');
+    this.phone = numbers;
+  }
+
   if (!this.isModified('password')) return next();
   
   try {

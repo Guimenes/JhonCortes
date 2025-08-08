@@ -6,7 +6,7 @@ interface AuthContextValue {
   user: User | null;
   token: string | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (identifier: string, password: string) => Promise<void>; // identifier pode ser email ou telefone
   register: (data: { name: string; email: string; phone: string; password: string }) => Promise<void>;
   logout: () => void;
 }
@@ -41,10 +41,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [token]);
 
-  const login = async (email: string, password: string) => {
+  const login = async (identifier: string, password: string) => {
     setLoading(true);
     try {
-      const res = await authAPI.login({ email, password });
+      const res = await authAPI.login({ identifier, password });
       const { token: t, user: u } = res;
       localStorage.setItem('token', t);
       localStorage.setItem('user', JSON.stringify(u));

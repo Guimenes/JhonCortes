@@ -38,7 +38,7 @@ export interface Appointment {
 }
 
 export interface LoginCredentials {
-  email: string;
+  identifier: string; // email ou telefone
   password: string;
 }
 

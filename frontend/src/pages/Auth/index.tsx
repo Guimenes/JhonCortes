@@ -5,7 +5,8 @@ import './styles.css';
 
 interface AuthFormData {
   name?: string;
-  email: string;
+  identifier: string; // email ou telefone para login
+  email?: string; // email específico para registro
   password: string;
   confirmPassword?: string;
   phone?: string;
@@ -15,6 +16,7 @@ const AuthPage: React.FC = () => {
   const location = useLocation();
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState<AuthFormData>({
+    identifier: '',
     email: '',
     password: '',
     name: '',
@@ -51,6 +53,23 @@ const AuthPage: React.FC = () => {
         formattedValue = `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
       }
     }
+
+    // Formatação para identifier no modo login (permite email ou telefone)
+    if (name === 'identifier' && isLogin) {
+      // Se não contém @ e é numérico, aplica formatação de telefone
+      if (!value.includes('@') && /^\d/.test(value)) {
+        const numbers = value.replace(/\D/g, '');
+        if (numbers.length <= 2) {
+          formattedValue = numbers;
+        } else if (numbers.length <= 7) {
+          formattedValue = `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+        } else {
+          formattedValue = `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
+        }
+      } else {
+        formattedValue = value; // Para email, mantém o valor original
+      }
+    }
     
     setFormData(prev => ({
       ...prev,
@@ -69,25 +88,38 @@ const AuthPage: React.FC = () => {
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    // Validação de email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!formData.email) {
-      newErrors.email = 'Email é obrigatório';
-    } else if (!emailRegex.test(formData.email)) {
-      newErrors.email = 'Email inválido';
-    }
-
-    // Validação de senha
-    if (!formData.password) {
-      newErrors.password = 'Senha é obrigatória';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Senha deve ter pelo menos 6 caracteres';
-    }
-
-    // Validações específicas para registro
-    if (!isLogin) {
+    if (isLogin) {
+      // Validação para login (identifier + password)
+      if (!formData.identifier) {
+        newErrors.identifier = 'Email ou telefone é obrigatório';
+      } else {
+        // Verificar se é email ou telefone
+        const isEmail = formData.identifier.includes('@');
+        if (isEmail) {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(formData.identifier)) {
+            newErrors.identifier = 'Email inválido';
+          }
+        } else {
+          // Validar formato do telefone
+          const phoneNumbers = formData.identifier.replace(/\D/g, '');
+          if (phoneNumbers.length < 10 || phoneNumbers.length > 11) {
+            newErrors.identifier = 'Telefone deve ter 10 ou 11 dígitos';
+          }
+        }
+      }
+    } else {
+      // Validação para registro
       if (!formData.name || formData.name.trim().length < 2) {
         newErrors.name = 'Nome deve ter pelo menos 2 caracteres';
+      }
+
+      // Validação de email para registro
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!formData.email) {
+        newErrors.email = 'Email é obrigatório';
+      } else if (!emailRegex.test(formData.email)) {
+        newErrors.email = 'Email inválido';
       }
       
       if (!formData.phone || formData.phone.trim().length < 10) {
@@ -107,6 +139,13 @@ const AuthPage: React.FC = () => {
       }
     }
 
+    // Validação de senha (comum para login e registro)
+    if (!formData.password) {
+      newErrors.password = 'Senha é obrigatória';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Senha deve ter pelo menos 6 caracteres';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -120,11 +159,11 @@ const AuthPage: React.FC = () => {
     
     try {
       if (isLogin) {
-        await login(formData.email, formData.password);
+        await login(formData.identifier, formData.password);
       } else {
         await register({
           name: formData.name!,
-          email: formData.email,
+          email: formData.email!,
           phone: formData.phone!,
           password: formData.password
         });
@@ -143,6 +182,7 @@ const AuthPage: React.FC = () => {
     const newIsLogin = !isLogin;
     setIsLogin(newIsLogin);
     setFormData({
+      identifier: '',
       email: '',
       password: '',
       name: '',
@@ -223,19 +263,37 @@ const AuthPage: React.FC = () => {
                 </div>
               )}
 
-              <div className="input-group">
-                <label htmlFor="email">Email</label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className={errors.email ? 'error' : ''}
-                  placeholder="Digite seu email"
-                />
-                {errors.email && <span className="error-message">{errors.email}</span>}
-              </div>
+              {!isLogin && (
+                <div className="input-group">
+                  <label htmlFor="email">Email</label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={formData.email || ''}
+                    onChange={handleInputChange}
+                    className={errors.email ? 'error' : ''}
+                    placeholder="Digite seu email"
+                  />
+                  {errors.email && <span className="error-message">{errors.email}</span>}
+                </div>
+              )}
+
+              {isLogin && (
+                <div className="input-group">
+                  <label htmlFor="identifier">Email ou Telefone</label>
+                  <input
+                    type="text"
+                    id="identifier"
+                    name="identifier"
+                    value={formData.identifier}
+                    onChange={handleInputChange}
+                    className={errors.identifier ? 'error' : ''}
+                    placeholder="Digite seu email ou telefone"
+                  />
+                  {errors.identifier && <span className="error-message">{errors.identifier}</span>}
+                </div>
+              )}
 
               <div className="input-group">
                 <label htmlFor="password">Senha</label>

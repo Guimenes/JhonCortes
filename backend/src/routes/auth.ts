@@ -10,12 +10,21 @@ router.post('/register', async (req, res) => {
   try {
     const { name, email, phone, password } = req.body;
 
-    // Verificar se o usuário já existe
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    // Verificar se o usuário já existe por email
+    const existingUserByEmail = await User.findOne({ email });
+    if (existingUserByEmail) {
       return res.status(400).json({ 
         success: false, 
         message: 'Usuário já existe com este email' 
+      });
+    }
+
+    // Verificar se o usuário já existe por telefone
+    const existingUserByPhone = await User.findOne({ phone });
+    if (existingUserByPhone) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Usuário já existe com este telefone' 
       });
     }
 
@@ -28,8 +37,8 @@ router.post('/register', async (req, res) => {
       name,
       email,
       phone,
-  // Deixe o hook pre('save') hashear a senha
-  password,
+      // Deixe o hook pre('save') hashear a senha
+      password,
       role
     });
 
@@ -50,7 +59,7 @@ router.post('/register', async (req, res) => {
       message: 'Usuário criado com sucesso',
       token,
       user: {
-  _id: user._id,
+        _id: user._id,
         name: user.name,
         email: user.email,
         phone: user.phone,
@@ -59,6 +68,23 @@ router.post('/register', async (req, res) => {
     });
   } catch (error) {
     console.error('Erro no registro:', error);
+    
+    // Tratamento específico para erros de validação do MongoDB
+    if (error instanceof Error && error.message.includes('E11000')) {
+      if (error.message.includes('email')) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Este email já está em uso' 
+        });
+      }
+      if (error.message.includes('phone')) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Este telefone já está em uso' 
+        });
+      }
+    }
+    
     res.status(500).json({ 
       success: false, 
       message: 'Erro interno do servidor' 
@@ -69,10 +95,35 @@ router.post('/register', async (req, res) => {
 // Login de usuário
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { identifier, password } = req.body; // 'identifier' pode ser email ou telefone
 
-    // Verificar se o usuário existe
-  const user = await User.findOne({ email }).select('+password');
+    console.log('Login attempt:', { identifier, password: password ? '***' : undefined });
+
+    if (!identifier || !password) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email/telefone e senha são obrigatórios' 
+      });
+    }
+
+    // Determinar se o identifier é email ou telefone
+    const isEmail = identifier.includes('@');
+    
+    // Buscar usuário por email ou telefone
+    let searchQuery;
+    if (isEmail) {
+      searchQuery = { email: identifier.toLowerCase().trim() };
+    } else {
+      // Normalizar telefone para busca (remover formatação)
+      const normalizedPhone = identifier.replace(/\D/g, '');
+      searchQuery = { phone: normalizedPhone };
+    }
+
+    console.log('Search query:', searchQuery);
+
+    const user = await User.findOne(searchQuery).select('+password');
+    console.log('User found:', user ? 'yes' : 'no');
+    
     if (!user) {
       return res.status(400).json({ 
         success: false, 
@@ -80,8 +131,18 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    // Verificar se o usuário está ativo
+    if (!user.isActive) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Usuário inativo. Entre em contato com o suporte.' 
+      });
+    }
+
     // Verificar senha
-  const isPasswordValid = await (user as any).comparePassword(password);
+    const isPasswordValid = await (user as any).comparePassword(password);
+    console.log('Password valid:', isPasswordValid);
+    
     if (!isPasswordValid) {
       return res.status(400).json({ 
         success: false, 
@@ -104,7 +165,7 @@ router.post('/login', async (req, res) => {
       message: 'Login realizado com sucesso',
       token,
       user: {
-  _id: user._id,
+        _id: user._id,
         name: user.name,
         email: user.email,
         phone: user.phone,
