@@ -23,6 +23,27 @@ export interface Service {
   updatedAt: string;
 }
 
+export interface Schedule {
+  _id: string;
+  dayOfWeek: 0 | 1 | 2 | 3 | 4 | 5 | 6; // 0 = Domingo, 1 = Segunda, etc.
+  startTime: string; // Formato HH:mm
+  endTime: string; // Formato HH:mm
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Unavailability {
+  _id: string;
+  date: string; // Data específica da indisponibilidade
+  startTime: string; // Formato HH:mm
+  endTime: string; // Formato HH:mm
+  reason: string; // Motivo da indisponibilidade
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Appointment {
   _id: string;
   user: User | string;
@@ -69,6 +90,22 @@ export interface CreateServiceData {
   price: number;
   category: 'corte' | 'barba' | 'combo' | 'tratamento';
   image?: string;
+  isActive?: boolean;
+}
+
+export interface CreateScheduleData {
+  dayOfWeek: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  startTime: string;
+  endTime: string;
+  isActive?: boolean;
+}
+
+export interface CreateUnavailabilityData {
+  date: string;
+  startTime: string;
+  endTime: string;
+  reason: string;
+  isActive?: boolean;
 }
 
 export interface UpdateProfileData {

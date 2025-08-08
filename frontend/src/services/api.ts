@@ -3,11 +3,15 @@ import type {
   User,
   Service,
   Appointment,
+  Schedule,
+  Unavailability,
   LoginCredentials,
   RegisterData,
   AuthResponse,
   CreateAppointmentData,
   CreateServiceData,
+  CreateScheduleData,
+  CreateUnavailabilityData,
   UpdateProfileData,
   AvailableSlots,
 } from '../types';
@@ -196,6 +200,68 @@ export const usersAPI = {
 export const healthAPI = {
   check: async (): Promise<{ status: string; message: string; timestamp: string }> => {
     const response = await api.get('/health');
+    return response.data;
+  },
+};
+
+// Schedules endpoints (Admin only)
+export const schedulesAPI = {
+  getAll: async (): Promise<Schedule[]> => {
+    const response = await api.get('/schedules');
+    return response.data;
+  },
+
+  getAllAdmin: async (): Promise<Schedule[]> => {
+    const response = await api.get('/schedules/admin');
+    return response.data;
+  },
+
+  create: async (data: CreateScheduleData): Promise<{ message: string; schedule: Schedule }> => {
+    const response = await api.post('/schedules', data);
+    return response.data;
+  },
+
+  update: async (id: string, data: Partial<CreateScheduleData>): Promise<{ message: string; schedule: Schedule }> => {
+    const response = await api.put(`/schedules/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<{ message: string }> => {
+    const response = await api.delete(`/schedules/${id}`);
+    return response.data;
+  },
+
+  getAvailableSlots: async (date: string): Promise<{ availableSlots: string[] }> => {
+    const response = await api.get(`/schedules/available-slots/${date}`);
+    return response.data;
+  },
+};
+
+// Unavailabilities endpoints (Admin only)
+export const unavailabilitiesAPI = {
+  getAll: async (date?: string): Promise<Unavailability[]> => {
+    const params = date ? { date } : {};
+    const response = await api.get('/schedules/unavailabilities', { params });
+    return response.data;
+  },
+
+  getAllAdmin: async (): Promise<Unavailability[]> => {
+    const response = await api.get('/schedules/unavailabilities/admin');
+    return response.data;
+  },
+
+  create: async (data: CreateUnavailabilityData): Promise<{ message: string; unavailability: Unavailability }> => {
+    const response = await api.post('/schedules/unavailabilities', data);
+    return response.data;
+  },
+
+  update: async (id: string, data: Partial<CreateUnavailabilityData>): Promise<{ message: string; unavailability: Unavailability }> => {
+    const response = await api.put(`/schedules/unavailabilities/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<{ message: string }> => {
+    const response = await api.delete(`/schedules/unavailabilities/${id}`);
     return response.data;
   },
 };

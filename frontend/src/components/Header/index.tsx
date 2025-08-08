@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Menu, X, Scissors, Phone, MapPin, Clock } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Menu, X, Scissors, Phone, MapPin, Clock, ChevronDown } from 'lucide-react';
 import './Header.css';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
@@ -11,7 +11,21 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onBookingClick }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isAdminDropdownOpen, setIsAdminDropdownOpen] = useState(false);
   const { user } = useAuth();
+  const dropdownRef = useRef<HTMLLIElement>(null);
+
+  // Fechar dropdown ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsAdminDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -78,6 +92,27 @@ const Header: React.FC<HeaderProps> = ({ onBookingClick }) => {
               <li><a href="#sobre" onClick={() => scrollToSection('sobre')}>Sobre</a></li>
               <li><a href="#galeria" onClick={() => scrollToSection('galeria')}>Galeria</a></li>
               <li><a href="#contato" onClick={() => scrollToSection('contato')}>Contato</a></li>
+              {user && user.role === 'admin' && (
+                <li className="admin-dropdown" ref={dropdownRef}>
+                  <button 
+                    className="admin-dropdown-toggle"
+                    onClick={() => setIsAdminDropdownOpen(!isAdminDropdownOpen)}
+                  >
+                    Administração
+                    <ChevronDown size={16} />
+                  </button>
+                  {isAdminDropdownOpen && (
+                    <div className="admin-dropdown-menu">
+                      <Link to="/admin/services" onClick={() => setIsAdminDropdownOpen(false)}>
+                        Gerenciar Serviços
+                      </Link>
+                      <Link to="/admin/schedules" onClick={() => setIsAdminDropdownOpen(false)}>
+                        Horários e Indisponibilidades
+                      </Link>
+                    </div>
+                  )}
+                </li>
+              )}
             </ul>
 
             {/* CTA / Auth Buttons */}
@@ -122,6 +157,12 @@ const Header: React.FC<HeaderProps> = ({ onBookingClick }) => {
             <li><a href="#sobre" onClick={() => scrollToSection('sobre')}>Sobre</a></li>
             <li><a href="#galeria" onClick={() => scrollToSection('galeria')}>Galeria</a></li>
             <li><a href="#contato" onClick={() => scrollToSection('contato')}>Contato</a></li>
+            {user && user.role === 'admin' && (
+              <>
+                <li><Link to="/admin/services" onClick={() => setIsMenuOpen(false)}>Gerenciar Serviços</Link></li>
+                <li><Link to="/admin/schedules" onClick={() => setIsMenuOpen(false)}>Horários e Indisponibilidades</Link></li>
+              </>
+            )}
             <li>
               <button 
                 className="btn btn-primary w-full"

@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Header from './components/Header'
 import Hero from './components/Hero'
 import AuthPage from './pages/Auth'
+import AdminServices from './pages/AdminServices'
+import AdminSchedules from './pages/AdminSchedules'
 import './App.css'
 import { AuthProvider } from './hooks/useAuth'
 
@@ -56,6 +58,8 @@ function App() {
           } />
           <Route path="/login" element={<AuthPage />} />
           <Route path="/register" element={<AuthPage />} />
+          <Route path="/admin/services" element={<AdminServices />} />
+          <Route path="/admin/schedules" element={<AdminSchedules />} />
         </Routes>
         
         {/* Modal de agendamento - placeholder */}

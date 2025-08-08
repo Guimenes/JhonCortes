@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import UserProfile from '../UserProfile';
 import type { User } from '../../types';
 
@@ -6,7 +6,7 @@ interface UserAvatarProps {
   user: User;
 }
 
-const UserAvatar: React.FC<UserAvatarProps> = ({ user }) => {
+const UserAvatar: React.FC<UserAvatarProps> = memo(({ user }) => {
   const [showProfile, setShowProfile] = useState(false);
 
   const getInitials = (name: string) => {
@@ -18,27 +18,26 @@ const UserAvatar: React.FC<UserAvatarProps> = ({ user }) => {
       .slice(0, 2);
   };
 
-  // Debug: verificar URL do avatar
-  console.log('UserAvatar Debug:', {
-    user,
-    avatar: user.avatar,
-    constructedURL: user.avatar ? `${import.meta.env.VITE_BASE_URL || 'http://localhost:5000'}${user.avatar}` : null
-  });
+  const avatarUrl = user.avatar ? `${import.meta.env.VITE_BASE_URL || 'http://localhost:5000'}${user.avatar}` : null;
 
-  // Fetch example (this line is just added as per your request, but it's not used in the component)
-  fetch('http://localhost:5000/uploads/avatars/avatar-1754625021155-201365052.jpg', {
-    credentials: 'include'
-  });
+  console.log('UserAvatar render:', { user: user.name, avatar: user.avatar, avatarUrl });
 
   return (
     <>
       <div className="user-avatar" onClick={() => setShowProfile(true)}>
         <div className="user-avatar-circle">
-          {user.avatar ? (
+          {avatarUrl ? (
             <img 
-              src={`${import.meta.env.VITE_BASE_URL || 'http://localhost:5000'}${user.avatar}`} 
+              src={avatarUrl} 
               alt={user.name} 
               crossOrigin="anonymous"
+              loading="lazy"
+              onError={(e) => {
+                console.error('Erro ao carregar avatar:', e);
+              }}
+              onLoad={() => {
+                console.log('Avatar carregado com sucesso:', avatarUrl);
+              }}
             />
           ) : (
             <span className="user-initials">{getInitials(user.name)}</span>
@@ -51,6 +50,13 @@ const UserAvatar: React.FC<UserAvatarProps> = ({ user }) => {
       )}
     </>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison function
+  return prevProps.user._id === nextProps.user._id && 
+         prevProps.user.avatar === nextProps.user.avatar &&
+         prevProps.user.name === nextProps.user.name;
+});
+
+UserAvatar.displayName = 'UserAvatar';
 
 export default UserAvatar;

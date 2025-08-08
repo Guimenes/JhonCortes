@@ -20,9 +20,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
   const [loading, setLoading] = useState(false);
+  const [hasValidated, setHasValidated] = useState(false);
 
   useEffect(() => {
-    if (token) {
+    if (token && !hasValidated) {
+      setHasValidated(true);
       // opcional: validar token buscando /auth/me
       authAPI
         .getCurrentUser()
@@ -39,7 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           localStorage.removeItem('user');
         });
     }
-  }, [token]);
+  }, [token, hasValidated]);
 
   const login = async (identifier: string, password: string) => {
     setLoading(true);
@@ -50,6 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('user', JSON.stringify(u));
       setToken(t);
       setUser(u);
+      setHasValidated(true); // Mark as validated since we just got fresh data
     } finally {
       setLoading(false);
     }
@@ -64,6 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('user', JSON.stringify(u));
       setToken(t);
       setUser(u);
+      setHasValidated(true); // Mark as validated since we just got fresh data
     } finally {
       setLoading(false);
     }
@@ -74,6 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('user');
     setToken(null);
     setUser(null);
+    setHasValidated(false); // Reset validation state
   };
 
   const value = useMemo(

@@ -1,0 +1,298 @@
+/* Admin Schedules Page Styles */
+.admin-schedules-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  font-family: 'Inter', sans-serif;
+}
+
+.access-denied {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: var(--white);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.access-denied h2 {
+  color: var(--primary-black);
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+.access-denied p {
+  color: #666;
+  font-size: 1rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--primary-yellow);
+}
+
+.page-header h1 {
+  color: var(--primary-black);
+  font-size: 2rem;
+  font-weight: bold;
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.tabs-section {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.tab-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  border: none;
+  background: none;
+  color: #6b7280;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.tab-button:hover {
+  color: var(--primary-black);
+  background: #f9fafb;
+}
+
+.tab-button.active {
+  color: var(--primary-black);
+  border-bottom-color: var(--primary-yellow);
+}
+
+.schedules-grid,
+.unavailabilities-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.schedule-card,
+.unavailability-card {
+  background: var(--white);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 2px solid transparent;
+}
+
+.schedule-card:hover,
+.unavailability-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.schedule-card.inactive,
+.unavailability-card.inactive {
+  opacity: 0.6;
+  border-color: #e5e7eb;
+}
+
+.schedule-header,
+.unavailability-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.schedule-header h3,
+.unavailability-header h3 {
+  color: var(--primary-black);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+  flex: 1;
+}
+
+.schedule-actions,
+.unavailability-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-icon:hover {
+  background: #f3f4f6;
+}
+
+.btn-icon.danger:hover {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.schedule-info,
+.unavailability-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.time-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--primary-gold);
+  font-weight: 500;
+}
+
+.time-info svg {
+  color: var(--primary-gold);
+}
+
+.reason-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.reason-info strong {
+  color: var(--primary-black);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.reason-info span {
+  color: #6b7280;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.status-info {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status.active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status.inactive {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.loading-state,
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  grid-column: 1 / -1;
+}
+
+.loading-state .spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f4f6;
+  border-top: 4px solid var(--primary-yellow);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+.empty-state svg {
+  color: #d1d5db;
+  margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+  color: var(--primary-black);
+  margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+  color: #6b7280;
+  margin-bottom: 1.5rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .admin-schedules-page {
+    padding: 1rem;
+  }
+
+  .page-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .page-header h1 {
+    text-align: center;
+    font-size: 1.5rem;
+  }
+
+  .tabs-section {
+    flex-direction: column;
+  }
+
+  .tab-button {
+    text-align: center;
+    border-bottom: 1px solid #e5e7eb;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+  }
+
+  .tab-button.active {
+    background: var(--primary-yellow);
+    border-bottom-color: var(--primary-yellow);
+  }
+
+  .schedules-grid,
+  .unavailabilities-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .schedule-header,
+  .unavailability-header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .schedule-actions,
+  .unavailability-actions {
+    align-self: flex-end;
+  }
+}
