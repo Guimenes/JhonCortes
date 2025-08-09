@@ -1,12 +1,45 @@
 # Ignorar node_modules
 node_modules/
-
-# Ignorar arquivos de log
-*.log
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Ignorar arquivos de ambiente
 .env
+.env.local
+.env.development
+.env.test
+.env.production
 
 # Ignorar diretórios de build
 build/
 dist/
+out/
+
+# Ignorar arquivos de cache
+.npm
+.yarn-integrity
+.parcel-cache
+
+# Ignorar arquivos temporários
+*.tmp
+*.temp
+.cache/
+
+# Ignorar arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# Ignorar arquivos de IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Ignorar package-lock.json se estiver usando yarn
+# package-lock.json
+
+# Ignorar logs
+*.log
+logs/

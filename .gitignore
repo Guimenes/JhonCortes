@@ -1,4 +1,52 @@
+# Arquivos e pastas específicos do projeto
 /.github
 /.vscode
-/.node_modules
-/.env
+
+# Node modules em qualquer lugar do projeto
+node_modules/
+**/node_modules/
+
+# Arquivos de ambiente
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+**/.env
+**/.env.local
+
+# Arquivos de build
+build/
+dist/
+out/
+**/build/
+**/dist/
+**/out/
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Cache
+.npm
+.yarn-integrity
+.parcel-cache
+**/.npm
+**/.yarn-integrity
+
+# Arquivos temporários
+*.tmp
+*.temp
+.cache/
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# IDEs
+.idea/
+*.swp
+*.swo

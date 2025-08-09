@@ -32,7 +32,7 @@ export const LoginScreen: React.FC = () => {
 
     setLoading(true);
     try {
-      await signIn({ email, password });
+      await signIn({ identifier: email, password });
     } catch (error: any) {
       console.error('Erro no login:', error);
       Alert.alert('Erro', error.message || 'Erro ao fazer login');
