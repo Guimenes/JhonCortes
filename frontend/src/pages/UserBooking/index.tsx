@@ -1,34 +1,61 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, Plus, Filter, Search } from 'lucide-react';
+import { 
+  Calendar, 
+  Clock, 
+  Plus, 
+  Filter, 
+  Search, 
+  Scissors, 
+  Star, 
+  MapPin, 
+  Phone, 
+  XCircle, 
+  CalendarCheck,
+  ArrowRight,
+  Sparkles
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import BookingWizard from '../../components/BookingWizard';
-import type { Appointment, Service } from '../../types';
-import { appointmentsAPI, servicesAPI } from '../../services/api';
+import type { Appointment } from '../../types';
+import { appointmentsAPI } from '../../services/api';
 import { showSuccess, showError } from '../../utils/alerts';
+import { useAuth } from '../../hooks/useAuth';
 import './styles.css';
 
 const UserBooking: React.FC = () => {
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [showBookingWizard, setShowBookingWizard] = useState(false);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'history'>('upcoming');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
+  // Verificar se o usuário está autenticado
   useEffect(() => {
-    loadData();
-  }, []);
+    console.log('UserBooking - authLoading:', authLoading, 'user:', user);
+    if (!authLoading && !user) {
+      console.log('Redirecionando para /login...');
+      navigate('/login');
+    }
+  }, [user, authLoading, navigate]);
+
+  useEffect(() => {
+    if (user) {
+      loadData();
+    }
+  }, [user]);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const [appointmentsData, servicesData] = await Promise.all([
-        appointmentsAPI.getMyAppointments(),
-        servicesAPI.getAll()
-      ]);
+      console.log('Carregando dados do usuário...');
+      const appointmentsData = await appointmentsAPI.getMyAppointments();
+      console.log('Dados carregados:', { appointmentsData });
       setAppointments(appointmentsData);
-      setServices(servicesData.filter(service => service.isActive));
     } catch (error) {
+      console.error('Erro ao carregar dados:', error);
       showError('Erro', 'Não foi possível carregar os dados.');
     } finally {
       setLoading(false);
@@ -66,16 +93,6 @@ const UserBooking: React.FC = () => {
     }).format(price);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pendente': return '#f59e0b';
-      case 'confirmado': return '#10b981';
-      case 'concluido': return '#6366f1';
-      case 'cancelado': return '#ef4444';
-      default: return '#6b7280';
-    }
-  };
-
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'pendente': return 'Pendente';
@@ -88,7 +105,7 @@ const UserBooking: React.FC = () => {
 
   const filteredAppointments = appointments.filter(appointment => {
     const matchesSearch = !searchTerm || 
-      (typeof appointment.service === 'object' && appointment.service.name.toLowerCase().includes(searchTerm.toLowerCase()));
+      (appointment.service && typeof appointment.service === 'object' && appointment.service.name.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesStatus = statusFilter === 'all' || appointment.status === statusFilter;
     
@@ -102,205 +119,345 @@ const UserBooking: React.FC = () => {
   const upcomingCount = appointments.filter(app => ['pendente', 'confirmado'].includes(app.status)).length;
   const historyCount = appointments.filter(app => ['concluido', 'cancelado'].includes(app.status)).length;
 
-  return (
-    <div className="user-booking">
-      <div className="page-header">
-        <div className="header-content">
-          <div className="header-info">
-            <h1>Meus Agendamentos</h1>
-            <p>Gerencie seus horários na barbearia</p>
+  // Mostrar loading enquanto verifica autenticação
+  if (authLoading) {
+    return (
+      <div className="user-booking">
+        <div className="loading-section">
+          <div className="loading-animation">
+            <div className="spinner-modern"></div>
+            <p>Verificando acesso...</p>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Se não há usuário após o loading, mostrar uma mensagem de redirecionamento
+  if (!user) {
+    return (
+      <div className="user-booking">
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          minHeight: '100vh',
+          flexDirection: 'column',
+          gap: '20px'
+        }}>
+          <div className="spinner-modern"></div>
+          <p>Redirecionando para o login...</p>
           <button 
             className="btn btn-primary"
-            onClick={() => setShowBookingWizard(true)}
+            onClick={() => navigate('/login')}
           >
-            <Plus size={18} />
-            Novo Agendamento
+            Ir para Login
           </button>
         </div>
       </div>
+    );
+  }
 
-      <div className="page-content">
-        <div className="tabs-section">
-          <div className="tabs-header">
+  return (
+    <div className="user-booking">
+      {/* Hero Section */}
+      <div className="booking-hero">
+        <div className="hero-background">
+          <div className="hero-pattern"></div>
+        </div>
+        <div className="hero-content">
+          <div className="hero-text">
+            <div className="welcome-badge">
+              <Sparkles size={16} />
+              <span>Bem-vindo{user ? `, ${user.name.split(' ')[0]}` : ''}!</span>
+            </div>
+            <h1>
+              Seus Agendamentos
+              <span className="gradient-text">Premium</span>
+            </h1>
+            <p>Veja seus horários na melhor barbearia da cidade</p>
+            <div className="hero-stats">
+              <div className="stat-item">
+                <CalendarCheck size={20} />
+                <span>{upcomingCount} próximos</span>
+              </div>
+              <div className="stat-item">
+                <Clock size={20} />
+                <span>{historyCount} realizados</span>
+              </div>
+            </div>
+          </div>
+          <div className="hero-action">
             <button 
-              className={`tab-button ${activeTab === 'upcoming' ? 'active' : ''}`}
+              className="cta-button"
+              onClick={() => setShowBookingWizard(true)}
+            >
+              <div className="cta-content">
+                <Scissors size={24} />
+                <div className="cta-text">
+                  <span className="cta-title">Novo Agendamento</span>
+                  <span className="cta-subtitle">Agende seu próximo corte</span>
+                </div>
+                <ArrowRight size={20} />
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation & Filters */}
+      <div className="booking-navigation">
+        <div className="nav-container">
+          <div className="nav-tabs">
+            <button 
+              className={`nav-tab ${activeTab === 'upcoming' ? 'active' : ''}`}
               onClick={() => setActiveTab('upcoming')}
             >
-              <Calendar size={18} />
-              Próximos
-              {upcomingCount > 0 && <span className="tab-count">{upcomingCount}</span>}
+              <div className="nav-tab-content">
+                <Calendar size={20} />
+                <div className="nav-tab-text">
+                  <span>Próximos</span>
+                  {upcomingCount > 0 && <span className="nav-badge">{upcomingCount}</span>}
+                </div>
+              </div>
             </button>
             <button 
-              className={`tab-button ${activeTab === 'history' ? 'active' : ''}`}
+              className={`nav-tab ${activeTab === 'history' ? 'active' : ''}`}
               onClick={() => setActiveTab('history')}
             >
-              <Clock size={18} />
-              Histórico
-              {historyCount > 0 && <span className="tab-count">{historyCount}</span>}
+              <div className="nav-tab-content">
+                <Clock size={20} />
+                <div className="nav-tab-text">
+                  <span>Histórico</span>
+                  {historyCount > 0 && <span className="nav-badge">{historyCount}</span>}
+                </div>
+              </div>
             </button>
           </div>
 
-          <div className="filters-section">
-            <div className="search-box">
-              <Search size={20} />
-              <input
-                type="text"
-                placeholder="Buscar por serviço..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            
-            <div className="filter-box">
-              <Filter size={20} />
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="all">Todos os status</option>
-                {activeTab === 'upcoming' ? (
-                  <>
-                    <option value="pendente">Pendente</option>
-                    <option value="confirmado">Confirmado</option>
-                  </>
-                ) : (
-                  <>
-                    <option value="concluido">Concluído</option>
-                    <option value="cancelado">Cancelado</option>
-                  </>
-                )}
-              </select>
+          <div className="nav-filters">
+            <div className="filter-group">
+              <div className="filter-item">
+                <Search size={18} />
+                <input
+                  type="text"
+                  placeholder="Buscar serviço..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="filter-input"
+                />
+              </div>
+              <div className="filter-item">
+                <Filter size={18} />
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="filter-select"
+                >
+                  <option value="all">Todos</option>
+                  {activeTab === 'upcoming' ? (
+                    <>
+                      <option value="pendente">Pendente</option>
+                      <option value="confirmado">Confirmado</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="concluido">Concluído</option>
+                      <option value="cancelado">Cancelado</option>
+                    </>
+                  )}
+                </select>
+              </div>
             </div>
           </div>
         </div>
+      </div>
 
+      {/* Content */}
+      <div className="booking-content">
         {loading ? (
-          <div className="loading-state">
-            <div className="spinner"></div>
-            <p>Carregando agendamentos...</p>
+          <div className="loading-section">
+            <div className="loading-animation">
+              <div className="spinner-modern"></div>
+              <p>Carregando agendamentos...</p>
+            </div>
           </div>
         ) : filteredAppointments.length > 0 ? (
-          <div className="appointments-grid">
+          <div className="appointment-luxury-grid">
             {filteredAppointments.map(appointment => (
-              <div key={appointment._id} className="appointment-card">
-                <div className="appointment-header">
-                  <div className="service-info">
-                    <h3>
-                      {typeof appointment.service === 'object' 
-                        ? appointment.service.name 
-                        : 'Serviço não encontrado'}
-                    </h3>
-                    <span 
-                      className="status-badge"
-                      style={{ backgroundColor: getStatusColor(appointment.status) }}
-                    >
-                      {getStatusLabel(appointment.status)}
-                    </span>
+              <div key={appointment._id} className="appointment-luxury-card">
+                <div className="luxury-card-status-banner"></div>
+                
+                <div className="luxury-card-content">
+                  {/* Título do serviço */}
+                  <h3 className="luxury-service-title">
+                    {appointment.service && typeof appointment.service === 'object' ? appointment.service.name : 'Serviço não encontrado'}
+                  </h3>
+                  
+                  {/* Status com label */}
+                  <div className={`luxury-status-badge status-${appointment.status}`}>
+                    {getStatusLabel(appointment.status)}
                   </div>
-                  <div className="appointment-price">
-                    {formatPrice(appointment.totalPrice)}
+                  
+                  {/* Informações principais */}
+                  <div className="luxury-info-section">
+                    <div className="luxury-info-group">
+                      <div className="luxury-info-label">
+                        <Calendar size={16} />
+                        <span>Data</span>
+                      </div>
+                      <div className="luxury-info-value">
+                        {formatDate(appointment.date).split(',')[1]}
+                      </div>
+                    </div>
+                    
+                    <div className="luxury-info-group">
+                      <div className="luxury-info-label">
+                        <Clock size={16} />
+                        <span>Horário</span>
+                      </div>
+                      <div className="luxury-info-value highlight">
+                        {formatTime(appointment.startTime)} - {formatTime(appointment.endTime)}
+                      </div>
+                    </div>
+                    
+                    {appointment.service && typeof appointment.service === 'object' && (
+                      <>
+                        <div className="luxury-info-group">
+                          <div className="luxury-info-label">
+                            <Clock size={16} />
+                            <span>Duração</span>
+                          </div>
+                          <div className="luxury-info-value">{appointment.service.duration} min</div>
+                        </div>
+                        
+                        <div className="luxury-info-group">
+                          <div className="luxury-info-label">
+                            <Star size={16} />
+                            <span>Valor</span>
+                          </div>
+                          <div className="luxury-info-value highlight-price">{formatPrice(appointment.totalPrice)}</div>
+                        </div>
+                      </>
+                    )}
                   </div>
-                </div>
-
-                <div className="appointment-details">
-                  <div className="detail-item">
-                    <Calendar size={16} />
-                    <span>{formatDate(appointment.date)}</span>
-                  </div>
-                  <div className="detail-item">
-                    <Clock size={16} />
-                    <span>{formatTime(appointment.startTime)} - {formatTime(appointment.endTime)}</span>
-                  </div>
-                  {typeof appointment.service === 'object' && (
-                    <div className="detail-item">
-                      <span className="duration-badge">
-                        {appointment.service.duration} min
-                      </span>
+                  
+                  {/* Notas do agendamento */}
+                  {appointment.notes && (
+                    <div className="luxury-notes">
+                      <div className="luxury-notes-content">
+                        <p>{appointment.notes}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Ações do card */}
+                  {activeTab === 'upcoming' && appointment.status !== 'cancelado' && (
+                    <div className="luxury-card-actions">
+                      <button
+                        className="luxury-cancel-btn"
+                        onClick={() => handleCancelAppointment(appointment._id)}
+                      >
+                        <XCircle size={16} />
+                        <span>Cancelar Agendamento</span>
+                      </button>
                     </div>
                   )}
                 </div>
-
-                {appointment.notes && (
-                  <div className="appointment-notes">
-                    <strong>Observações:</strong>
-                    <p>{appointment.notes}</p>
-                  </div>
-                )}
-
-                {activeTab === 'upcoming' && appointment.status !== 'cancelado' && (
-                  <div className="appointment-actions">
-                    <button
-                      className="btn btn-danger btn-sm"
-                      onClick={() => handleCancelAppointment(appointment._id)}
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                )}
+                
+                {/* Badge do dia da semana removido conforme solicitado */}
               </div>
             ))}
           </div>
         ) : (
-          <div className="empty-state">
-            <Calendar size={64} />
+          <div className="empty-state-modern">
+            <div className="empty-icon">
+              {activeTab === 'upcoming' ? <CalendarCheck size={64} /> : <Clock size={64} />}
+            </div>
             <h3>
               {activeTab === 'upcoming' 
                 ? 'Nenhum agendamento próximo' 
-                : 'Nenhum histórico encontrado'}
+                : 'Histórico vazio'}
             </h3>
             <p>
               {activeTab === 'upcoming' 
-                ? 'Que tal agendar um horário? Estamos prontos para cuidar de você!'
-                : 'Seus agendamentos concluídos e cancelados aparecerão aqui.'}
+                ? 'Que tal agendar um horário? Nossa equipe está pronta para cuidar de você!'
+                : 'Seus agendamentos concluídos aparecerão aqui.'}
             </p>
             {activeTab === 'upcoming' && (
               <button 
-                className="btn btn-primary"
+                className="empty-cta"
                 onClick={() => setShowBookingWizard(true)}
               >
-                <Plus size={18} />
-                Fazer Agendamento
+                <Plus size={20} />
+                Fazer Primeiro Agendamento
               </button>
             )}
           </div>
         )}
       </div>
 
-      {/* Quick Stats */}
-      {services.length > 0 && (
-        <div className="quick-stats">
-          <h3>Nossos Serviços</h3>
-          <div className="services-preview">
-            {services.slice(0, 3).map(service => (
-              <div key={service._id} className="service-preview-card">
-                {service.image && (
-                  <div className="service-preview-image">
-                    <img src={service.image} alt={service.name} />
-                  </div>
-                )}
-                <div className="service-preview-info">
-                  <h4>{service.name}</h4>
-                  <p>{service.duration} min • {formatPrice(service.price)}</p>
+          {/* Footer */}
+      <footer className="footer-section">
+        <div className="footer-container">
+          <div className="footer-columns">
+            <div className="footer-column">
+              <div className="footer-logo">
+                <h3>Jhon Cortes</h3>
+                <p className="footer-tagline">Barber Shop Premium</p>
+              </div>
+              <p className="footer-description">
+                Experiência premium de barbearia com profissionais qualificados e ambiente exclusivo.
+              </p>
+            </div>
+            
+            <div className="footer-column">
+              <h4>Informações</h4>
+              <div className="footer-links">
+                <div className="contact-item">
+                  <MapPin size={16} />
+                  <span>Rua das Barbearias, 123 - Centro</span>
+                </div>
+                <div className="contact-item">
+                  <Phone size={16} />
+                  <span>(11) 99999-9999</span>
+                </div>
+                <div className="contact-item">
+                  <Clock size={16} />
+                  <span>Seg - Sáb: 09h às 20h</span>
                 </div>
               </div>
-            ))}
-            <button 
-              className="service-preview-card add-service"
-              onClick={() => setShowBookingWizard(true)}
-            >
-              <Plus size={24} />
-              <span>Agendar Serviço</span>
-            </button>
+            </div>
+
+            <div className="footer-column">
+              <h4>Links Rápidos</h4>
+              <ul className="footer-nav">
+                <li><a href="/">Home</a></li>
+                <li><a href="#" onClick={() => setShowBookingWizard(true)}>Agendar</a></li>
+                <li><a href="/services">Serviços</a></li>
+                <li><a href="/profile">Perfil</a></li>
+              </ul>
+            </div>
+          </div>
+          
+          <div className="footer-bottom">
+            <p>&copy; {new Date().getFullYear()} Jhon Cortes Barber Shop. Todos os direitos reservados.</p>
+            <div className="footer-social">
+              <a href="#" aria-label="Instagram"><i className="social-icon instagram"></i></a>
+              <a href="#" aria-label="Facebook"><i className="social-icon facebook"></i></a>
+              <a href="#" aria-label="WhatsApp"><i className="social-icon whatsapp"></i></a>
+            </div>
           </div>
         </div>
-      )}
+      </footer>
 
       {showBookingWizard && (
-        <BookingWizard
-          onClose={() => setShowBookingWizard(false)}
-          onSuccess={loadData}
-        />
+        <React.Suspense fallback={<div>Carregando...</div>}>
+          <BookingWizard
+            onClose={() => setShowBookingWizard(false)}
+            onSuccess={loadData}
+          />
+        </React.Suspense>
       )}
     </div>
   );

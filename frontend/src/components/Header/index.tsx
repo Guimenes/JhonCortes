@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, X, Scissors, Phone, MapPin, Clock, ChevronDown } from 'lucide-react';
+import { Menu, X, Scissors, ChevronDown, Calendar, User, Home, Info, Image, Phone, Settings, 
+  LogOut } from 'lucide-react';
 import './Header.css';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import './auth-buttons.css';
 import UserAvatar from '../UserAvatar';
 
 interface HeaderProps {
@@ -12,21 +14,48 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ onBookingClick }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAdminDropdownOpen, setIsAdminDropdownOpen] = useState(false);
-  const { user } = useAuth();
+  const [headerClass, setHeaderClass] = useState('');
+  const { user, logout } = useAuth();
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const dropdownRef = useRef<HTMLLIElement>(null);
 
-  // Fechar dropdown ao clicar fora
+  // Detectar scroll da página
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 30) {
+        setHeaderClass('scrolled');
+      } else {
+        setHeaderClass('');
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Fechar dropdowns ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsAdminDropdownOpen(false);
+      }
+      
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+  
+  // Fechar menu ao mudar de rota
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [location.pathname]);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -39,6 +68,11 @@ const Header: React.FC<HeaderProps> = ({ onBookingClick }) => {
     }
     setIsMenuOpen(false);
   };
+  
+  // Verificar se estamos na página atual
+  const isActive = (path: string) => {
+    return location.pathname === path;
+  };
 
   const handleBookingClick = () => {
     if (user) {
@@ -49,134 +83,231 @@ const Header: React.FC<HeaderProps> = ({ onBookingClick }) => {
   };
 
   return (
-    <header className="header">
-      {/* Top bar com informações de contato */}
-      <div className="header-top">
-        <div className="container">
-          <div className="header-top-content">
-            <div className="contact-info">
-              <div className="contact-item">
-                <Phone size={16} />
-                <span>(11) 99999-9999</span>
-              </div>
-              <div className="contact-item">
-                <MapPin size={16} />
-                <span>Rua das Tesouras, 123 - São Paulo</span>
-              </div>
-              <div className="contact-item">
-                <Clock size={16} />
-                <span>Seg-Sáb: 9h às 18h</span>
-              </div>
-            </div>
-            <div className="social-links">
-              <a href="#" aria-label="Instagram">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                </svg>
-              </a>
-              <a href="#" aria-label="WhatsApp">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488"/>
-                </svg>
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-
+    <header className={`header ${headerClass}`}>
       {/* Navbar principal */}
       <nav className="navbar">
-        <div className="container">
-          <div className="navbar-content">
-            {/* Logo */}
-            <div className="logo">
-              <Scissors className="logo-icon" />
-              <span className="logo-text">Jhon Cortes</span>
-            </div>
+        <div className="navbar-content">
+          {/* Logo */}
+          <Link to="/" className="logo">
+            <Scissors className="logo-icon" />
+            <span className="logo-text">Jhon Cortes</span>
+          </Link>
 
-            {/* Desktop Navigation */}
-            <ul className="nav-links">
-              <li><a href="#inicio" onClick={() => scrollToSection('inicio')}>Início</a></li>
-              <li><a href="#servicos" onClick={() => scrollToSection('servicos')}>Serviços</a></li>
-              <li><a href="#sobre" onClick={() => scrollToSection('sobre')}>Sobre</a></li>
-              <li><a href="#galeria" onClick={() => scrollToSection('galeria')}>Galeria</a></li>
-              <li><a href="#contato" onClick={() => scrollToSection('contato')}>Contato</a></li>
-              {user && user.role === 'admin' && (
-                <li className="admin-dropdown" ref={dropdownRef}>
-                  <button 
-                    className="admin-dropdown-toggle"
-                    onClick={() => setIsAdminDropdownOpen(!isAdminDropdownOpen)}
+          {/* Desktop Navigation */}
+          <ul className="nav-links">
+            <li>
+              <a 
+                href="/" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigate('/');
+                  scrollToSection('inicio');
+                }}
+                className={isActive('/') ? 'active' : ''}
+              >
+                <Home size={16} /> Início
+              </a>
+            </li>
+            <li>
+              <a 
+                href="#servicos" 
+                onClick={() => scrollToSection('servicos')}
+              >
+                <Scissors size={16} /> Serviços
+              </a>
+            </li>
+            <li>
+              <a 
+                href="#sobre" 
+                onClick={() => scrollToSection('sobre')}
+              >
+                <Info size={16} /> Sobre
+              </a>
+            </li>
+            <li>
+              <a 
+                href="#galeria" 
+                onClick={() => scrollToSection('galeria')}
+              >
+                <Image size={16} /> Galeria
+              </a>
+            </li>
+            <li>
+              <a 
+                href="#contato" 
+                onClick={() => scrollToSection('contato')}
+              >
+                <Phone size={16} /> Contato
+              </a>
+            </li>
+            {user?.role === 'admin' && (
+              <li className="admin-dropdown" ref={dropdownRef}>
+                <button 
+                  className="admin-dropdown-toggle"
+                  onClick={() => setIsAdminDropdownOpen(!isAdminDropdownOpen)}
+                >
+                  <Settings size={16} />
+                  Administração
+                  <ChevronDown size={14} />
+                </button>
+                {isAdminDropdownOpen && (
+                  <div className="admin-dropdown-menu">
+                    <Link to="/admin/services" onClick={() => setIsAdminDropdownOpen(false)}>
+                      <Scissors size={14} /> Gerenciar Serviços
+                    </Link>
+                    <Link to="/admin/schedules" onClick={() => setIsAdminDropdownOpen(false)}>
+                      <Calendar size={14} /> Horários e Indisponibilidades
+                    </Link>
+                  </div>
+                )}
+              </li>
+            )}
+          </ul>
+
+          {/* CTA / Auth Buttons */}
+          <div className="header-cta">
+            <button 
+              className="btn btn-primary"
+              onClick={handleBookingClick}
+            >
+              <Calendar size={16} />
+              <span>Agendar Horário</span>
+            </button>
+            
+            {user ? (
+              <div className="user-section">
+                <span className="user-greeting">Olá, {user?.name.split(' ')[0]}</span>
+                <div className="user-menu-container" ref={userMenuRef}>
+                  <div 
+                    className="user-avatar" 
+                    onClick={() => setShowUserMenu(!showUserMenu)}
                   >
-                    Administração
-                    <ChevronDown size={16} />
-                  </button>
-                  {isAdminDropdownOpen && (
-                    <div className="admin-dropdown-menu">
-                      <Link to="/admin/services" onClick={() => setIsAdminDropdownOpen(false)}>
-                        Gerenciar Serviços
+                    <UserAvatar user={user!} />
+                  </div>
+                  {showUserMenu && (
+                    <div className="user-dropdown-menu">
+                      <Link to="/profile" onClick={() => setShowUserMenu(false)}>
+                        <User size={16} />
+                        Meu Perfil
                       </Link>
-                      <Link to="/admin/schedules" onClick={() => setIsAdminDropdownOpen(false)}>
-                        Horários e Indisponibilidades
+                      <Link to="/booking" onClick={() => setShowUserMenu(false)}>
+                        <Calendar size={16} />
+                        Meus Agendamentos
                       </Link>
+                      <button onClick={() => {
+                        logout();
+                        setShowUserMenu(false);
+                        navigate('/');
+                      }} className="logout-button">
+                        <LogOut size={16} />
+                        Sair
+                      </button>
                     </div>
                   )}
-                </li>
-              )}
-            </ul>
-
-            {/* CTA / Auth Buttons */}
-            <div className="header-cta">
-              <button 
-                className="btn btn-primary"
-                onClick={handleBookingClick}
-              >
-                Agendar Horário
-              </button>
-              
-              {user ? (
-                <div className="user-section">
-                  <UserAvatar user={user} />
                 </div>
-              ) : (
-                <div className="auth-buttons">
-                  <Link className="btn btn-login-modern" to="/login">
-                    <span className="login-icon">👤</span>
-                    Entrar
-                  </Link>
-                </div>
-              )}
-            </div>
-
-            {/* Mobile menu toggle */}
-            <button 
-              className="mobile-menu-toggle"
-              onClick={toggleMenu}
-              aria-label="Toggle menu"
-            >
-              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
+              </div>
+            ) : (
+              <div className="auth-buttons">
+                <Link className="btn btn-login-modern" to="/login">
+                  <User size={16} />
+                  <span>Entrar</span>
+                </Link>
+              </div>
+            )}
           </div>
+
+          {/* Mobile menu toggle */}
+          <button 
+            className="mobile-menu-toggle"
+            onClick={toggleMenu}
+            aria-label="Toggle menu"
+          >
+            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </div>
 
         {/* Mobile Navigation */}
         <div className={`mobile-nav ${isMenuOpen ? 'mobile-nav-open' : ''}`}>
           <ul className="mobile-nav-links">
-            <li><a href="#inicio" onClick={() => scrollToSection('inicio')}>Início</a></li>
-            <li><a href="#servicos" onClick={() => scrollToSection('servicos')}>Serviços</a></li>
-            <li><a href="#sobre" onClick={() => scrollToSection('sobre')}>Sobre</a></li>
-            <li><a href="#galeria" onClick={() => scrollToSection('galeria')}>Galeria</a></li>
-            <li><a href="#contato" onClick={() => scrollToSection('contato')}>Contato</a></li>
-            {user && user.role === 'admin' && (
+            <li>
+              <a 
+                href="/" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigate('/');
+                  scrollToSection('inicio');
+                  setIsMenuOpen(false);
+                }}
+                className={isActive('/') ? 'active' : ''}
+              >
+                <Home size={18} /> Início
+              </a>
+            </li>
+            <li>
+              <a 
+                href="#servicos" 
+                onClick={() => scrollToSection('servicos')}
+              >
+                <Scissors size={18} /> Serviços
+              </a>
+            </li>
+            <li>
+              <a 
+                href="#sobre" 
+                onClick={() => scrollToSection('sobre')}
+              >
+                <Info size={18} /> Sobre
+              </a>
+            </li>
+            <li>
+              <a 
+                href="#galeria" 
+                onClick={() => scrollToSection('galeria')}
+              >
+                <Image size={18} /> Galeria
+              </a>
+            </li>
+            <li>
+              <a 
+                href="#contato" 
+                onClick={() => scrollToSection('contato')}
+              >
+                <Phone size={18} /> Contato
+              </a>
+            </li>
+            
+            {user?.role === 'admin' && (
               <>
-                <li><Link to="/admin/services" onClick={() => setIsMenuOpen(false)}>Gerenciar Serviços</Link></li>
-                <li><Link to="/admin/schedules" onClick={() => setIsMenuOpen(false)}>Horários e Indisponibilidades</Link></li>
+                <li>
+                  <Link 
+                    to="/admin/services" 
+                    onClick={() => setIsMenuOpen(false)}
+                    className={isActive('/admin/services') ? 'active' : ''}
+                  >
+                    <Scissors size={18} /> Gerenciar Serviços
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    to="/admin/schedules" 
+                    onClick={() => setIsMenuOpen(false)}
+                    className={isActive('/admin/schedules') ? 'active' : ''}
+                  >
+                    <Calendar size={18} /> Horários e Indisponibilidades
+                  </Link>
+                </li>
               </>
             )}
+            
             <li>
               <button 
-                className="btn btn-primary w-full"
-                onClick={handleBookingClick}
+                className="btn btn-primary"
+                onClick={() => {
+                  handleBookingClick();
+                  setIsMenuOpen(false);
+                }}
               >
+                <Calendar size={18} />
                 Agendar Horário
               </button>
             </li>
@@ -184,17 +315,18 @@ const Header: React.FC<HeaderProps> = ({ onBookingClick }) => {
             {user ? (
               <li>
                 <div className="mobile-user-info">
-                  <UserAvatar user={user} />
+                  <span className="mobile-user-greeting">Olá, {user?.name.split(' ')[0]}!</span>
+                  <UserAvatar user={user!} />
                 </div>
               </li>
             ) : (
               <li>
                 <Link 
                   to="/login"
-                  className="btn btn-login-modern w-full mt-4" 
+                  className="btn btn-login-modern" 
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  <span className="login-icon">👤</span>
+                  <User size={18} />
                   Entrar
                 </Link>
               </li>

@@ -186,7 +186,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
                 {activeAppointments.map((appointment) => (
                   <div key={appointment._id} className="appointment-card">
                     <div className="appointment-header">
-                      <h4>{typeof appointment.service === 'object' ? appointment.service.name : 'Serviço'}</h4>
+                      <h4>{appointment.service && typeof appointment.service === 'object' ? appointment.service.name : 'Serviço'}</h4>
                       <span 
                         className="appointment-status"
                         style={{ backgroundColor: getStatusColor(appointment.status) }}
@@ -248,7 +248,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
                 {completedAppointments.map((appointment) => (
                   <div key={appointment._id} className="history-card">
                     <div className="history-header">
-                      <h4>{typeof appointment.service === 'object' ? appointment.service.name : 'Serviço'}</h4>
+                      <h4>{appointment.service && typeof appointment.service === 'object' ? appointment.service.name : 'Serviço'}</h4>
                       <span 
                         className="history-status"
                         style={{ backgroundColor: getStatusColor(appointment.status) }}

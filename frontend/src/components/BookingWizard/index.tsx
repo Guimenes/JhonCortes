@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, User, CheckCircle, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, ArrowLeft, ArrowRight, Scissors, CalendarCheck, MessageSquare } from 'lucide-react';
 import type { Service, CreateAppointmentData, Schedule } from '../../types';
 import { servicesAPI, appointmentsAPI, schedulesAPI } from '../../services/api';
-import { showSuccess, showError } from '../../utils/alerts';
+import { showSuccess, showError, showWarning, showConfirmation } from '../../utils/alerts';
 import CustomCalendar from '../CustomCalendar';
 import './styles.css';
 
@@ -29,11 +29,11 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ onClose, onSuccess }) => 
   const [bookingData, setBookingData] = useState<BookingData>({});
 
   const steps = [
-    { number: 1, title: 'Escolha o Serviço', icon: User },
+    { number: 1, title: 'Escolha o Serviço', icon: Scissors },
     { number: 2, title: 'Selecione a Data', icon: Calendar },
     { number: 3, title: 'Escolha o Horário', icon: Clock },
-    { number: 4, title: 'Informações Extras', icon: User },
-    { number: 5, title: 'Confirmação', icon: CheckCircle }
+    { number: 4, title: 'Informações Extras', icon: MessageSquare },
+    { number: 5, title: 'Confirmação', icon: CalendarCheck }
   ];
 
   useEffect(() => {
@@ -376,9 +376,6 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ onClose, onSuccess }) => 
                         <Clock size={16} />
                         {bookingData.service?.duration} minutos
                       </span>
-                      <span className="price">
-                        {formatPrice(bookingData.service?.price || 0)}
-                      </span>
                     </div>
                   </div>
                 </div>
@@ -423,12 +420,60 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ onClose, onSuccess }) => 
     }
   };
 
+  // Função para validar se é possível cancelar o agendamento (regra: até 2 horas antes)
+  const handleCloseOrCancel = () => {
+    if (currentStep === 1) {
+      // Se estiver no primeiro passo, pode fechar diretamente
+      onClose();
+    } else if (currentStep === 5 && bookingData.date && bookingData.time) {
+      // Se estiver no último passo (confirmação) e já tem data e hora selecionadas
+      // Combinar data e hora do agendamento
+      const appointmentDateTime = new Date(`${bookingData.date}T${bookingData.time}`);
+      const now = new Date();
+      
+      // Calcular a diferença em horas
+      const diffHours = (appointmentDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+      
+      if (diffHours < 2) {
+        // Se for menos de 2 horas antes, mostrar alerta e não permitir cancelamento
+        showWarning(
+          'Cancelamento não permitido',
+          'Não é possível cancelar agendamentos com menos de 2 horas de antecedência. Você pode remarcar este horário diretamente na barbearia.',
+          true
+        );
+      } else {
+        // Confirmar antes de cancelar
+        showConfirmation(
+          'Cancelar agendamento?',
+          'Você está prestes a cancelar seu agendamento. Tem certeza que deseja continuar?',
+          'Sim, cancelar',
+          'Não, manter agendamento'
+        ).then((result: any) => {
+          if (result.isConfirmed) {
+            onClose();
+            showSuccess('Agendamento cancelado com sucesso!');
+          }
+        });
+      }
+    } else {
+      // Se estiver em passos intermediários, apenas voltar ao passo anterior
+      setCurrentStep((currentStep - 1) as Step);
+    }
+  };
+  
   return (
     <div className="booking-wizard-overlay">
       <div className="booking-wizard">
         <div className="wizard-header">
-          <h2>Agendar Horário</h2>
-          <button className="close-btn" onClick={onClose}>×</button>
+          <h2><Scissors size={22} /> Agendar Horário</h2>
+          <button className="close-btn" onClick={() => {
+            // Se estiver no primeiro passo ou não tiver data/hora selecionada, pode fechar diretamente
+            if (currentStep === 1 || !bookingData.date || !bookingData.time) {
+              onClose();
+            } else {
+              handleCloseOrCancel();
+            }
+          }}>×</button>
         </div>
 
         <div className="progress-steps">
@@ -443,7 +488,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ onClose, onSuccess }) => 
                 className={`progress-step ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}`}
               >
                 <div className="step-indicator">
-                  <Icon size={20} />
+                  <Icon size={window.innerWidth <= 480 ? 16 : 20} />
                 </div>
                 <div className="step-info">
                   <span className="step-number">Passo {step.number}</span>
@@ -462,9 +507,9 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ onClose, onSuccess }) => 
         <div className="wizard-footer">
           <button
             className="btn btn-secondary"
-            onClick={() => currentStep > 1 ? setCurrentStep((currentStep - 1) as Step) : onClose()}
+            onClick={handleCloseOrCancel}
           >
-            <ArrowLeft size={18} />
+            <ArrowLeft size={16} />
             {currentStep > 1 ? 'Voltar' : 'Cancelar'}
           </button>
 
@@ -475,7 +520,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ onClose, onSuccess }) => 
               disabled={!canGoNext()}
             >
               Próximo
-              <ArrowRight size={18} />
+              <ArrowRight size={16} />
             </button>
           ) : (
             <button
@@ -483,8 +528,8 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ onClose, onSuccess }) => 
               onClick={handleConfirmBooking}
               disabled={loading}
             >
-              {loading ? 'Confirmando...' : 'Confirmar Agendamento'}
-              <CheckCircle size={18} />
+              {loading ? 'Confirmando...' : 'Confirmar'}
+              <CheckCircle size={16} />
             </button>
           )}
         </div>

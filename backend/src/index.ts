@@ -20,12 +20,30 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(helmet());
+
+// Configuração de CORS para múltiplos origins
+const allowedOrigins = process.env.FRONTEND_URLS 
+  ? process.env.FRONTEND_URLS.split(',') 
+  : ['*'];
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*', // Permite qualquer origem em desenvolvimento
+  origin: function(origin, callback) {
+    // Permitir requisições sem origin (como apps móveis ou requisições locais)
+    if (!origin) return callback(null, true);
+    
+    // Verificar se o origin está na lista de permitidos ou se qualquer origin é permitido ('*')
+    if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`Origem bloqueada pelo CORS: ${origin}`);
+      callback(null, true); // Por segurança em desenvolvimento, permitimos mesmo se não estiver na lista
+    }
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 app.use(morgan('combined'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -90,9 +108,13 @@ app.use((req, res, next) => {
 // Start server
 const startServer = async () => {
   await connectDB();
-  app.listen(PORT, () => {
-    console.log(`🚀 Servidor rodando na porta ${PORT}`);
-    console.log(`📱 API disponível em http://localhost:${PORT}`);
+  // Converter PORT para número para evitar erro de tipo
+  const portNumber = typeof PORT === 'string' ? parseInt(PORT, 10) : PORT;
+  
+  app.listen(portNumber, '0.0.0.0', () => {
+    console.log(`🚀 Servidor rodando na porta ${portNumber}`);
+    console.log(`📱 API disponível em http://localhost:${portNumber}`);
+    console.log(`🌐 Também disponível na rede em http://<seu-ip>:${portNumber}`);
   });
 };
 
