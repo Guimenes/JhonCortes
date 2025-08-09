@@ -3,6 +3,7 @@ import Service from '../models/Service';
 import { authenticateToken, requireAdmin } from '../middleware/auth';
 import { uploadServiceImage, deleteOldServiceImage } from '../middleware/serviceUpload';
 import path from 'path';
+import fs from 'fs';
 
 const router = express.Router();
 
@@ -63,6 +64,23 @@ router.post('/',
       if (req.file) {
         // O caminho relativo para a imagem em relação à raiz do projeto
         imagePath = path.join('uploads', 'services', req.file.filename).replace(/\\/g, '/');
+        
+        console.log(`Upload de imagem detectado:`, {
+          originalname: req.file.originalname,
+          mimetype: req.file.mimetype,
+          size: `${(req.file.size / 1024).toFixed(2)}KB`,
+          filename: req.file.filename,
+          destination: req.file.destination,
+          path: req.file.path,
+          savedPath: imagePath
+        });
+        
+        // Verificar se o arquivo realmente existe no sistema de arquivos
+        const fullPath = path.join(__dirname, '../../', imagePath);
+        console.log(`Caminho completo no servidor: ${fullPath}`);
+        console.log(`Arquivo existe? ${fs.existsSync(fullPath) ? 'Sim' : 'Não'}`);
+      } else {
+        console.log('Nenhuma imagem enviada com a requisição');
       }
 
       const service = new Service({
@@ -195,6 +213,37 @@ router.delete('/:id/permanent', authenticateToken, requireAdmin, async (req, res
   } catch (error: any) {
     res.status(400).json({ 
       message: 'Erro ao excluir serviço permanentemente',
+      error: error.message 
+    });
+  }
+});
+
+// Toggle service active status (Admin only) - Simplified endpoint
+router.put('/:id/toggle', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isActive } = req.body;
+    
+    // Lida com múltiplos formatos de dados (FormData ou JSON)
+    const isServiceActive = isActive === 'true' || isActive === true;
+    
+    const service = await Service.findByIdAndUpdate(
+      id,
+      { isActive: isServiceActive },
+      { new: true, runValidators: true }
+    );
+
+    if (!service) {
+      return res.status(404).json({ message: 'Serviço não encontrado' });
+    }
+
+    res.json({
+      message: `Serviço ${isActive === 'true' ? 'ativado' : 'desativado'} com sucesso`,
+      service
+    });
+  } catch (error: any) {
+    res.status(400).json({ 
+      message: 'Erro ao alterar status do serviço',
       error: error.message 
     });
   }

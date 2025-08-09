@@ -33,6 +33,7 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  height: auto;
 }
 
 .service-form-modal .modal-header {
@@ -77,6 +78,7 @@
   flex: 1;
   padding: 1.5rem;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* Para melhor rolagem em iOS */
 }
 
 .form-grid {
@@ -266,32 +268,50 @@
   margin: 0.5rem 0;
 }
 
+.image-preview-container {
+  position: relative;
+  margin: 0.5rem 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  background-color: #fafafa;
+  width: 100%;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
+}
+
 .image-preview {
   width: 100%;
-  max-height: 200px;
-  object-fit: cover;
+  height: 200px;
+  object-fit: contain; /* Mudado para contain para evitar distorção */
   border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  margin-bottom: 8px;
+  background-color: #ffffff;
+  display: block;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .remove-image-btn {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-top: 0.5rem;
   padding: 0.5rem 1rem;
   background: #f3f4f6;
   color: #ef4444;
   border: none;
-  border-radius: 4px;
-  font-size: 0.8rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
+  align-self: flex-start;
 }
 
 .remove-image-btn:hover {
   background: #fee2e2;
+  color: #dc2626;
 }
 
 /* Validação e erros */
@@ -324,25 +344,163 @@
   margin-top: 0.25rem;
 }
 
+/* Campo monetário com prefixo R$ */
+.price-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.price-prefix {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b7280;
+  font-weight: 500;
+  pointer-events: none;
+}
+
+.price-field {
+  padding-left: 42px !important;
+  text-align: left;
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
+  .service-form-modal {
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+  }
+  
+  .service-form-modal .modal-backdrop {
+    position: fixed;
+  }
+  
   .service-form-modal .modal-content {
     max-width: none;
     margin: 0;
     border-radius: 0;
-    height: 100vh;
-    max-height: none;
+    height: 100%;
+    max-height: 100vh;
+    width: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .service-form-modal .modal-header {
+    padding: 1.25rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--white);
   }
 
   .form-grid {
     grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .service-form {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .service-form .modal-body {
+    flex: 1;
+    padding: 1.25rem;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .service-form .modal-footer {
     flex-direction: column;
+    padding: 1.25rem;
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    background: var(--white);
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
   }
 
   .service-form .modal-footer .btn {
     width: 100%;
+    padding: 0.85rem;
+    height: 50px;
+  }
+  
+  /* Ajustes para inputs em telas pequenas */
+  .form-group {
+    margin-bottom: 0.85rem;
+  }
+  
+  .form-group input, 
+  .form-group select, 
+  .form-group textarea {
+    font-size: 16px; /* Evita zoom automático em iOS */
+    padding: 0.85rem;
+  }
+  
+  .image-preview {
+    height: 180px;
+  }
+  
+  /* Ajuste no campo de preço para melhor visualização */
+  .price-input-container {
+    position: relative;
+    width: 100%;
+  }
+  
+  .price-input-container::before {
+    font-size: 16px;
+    left: 12px;
+  }
+}
+
+/* Ajustes específicos para telas muito pequenas */
+@media (max-width: 380px) {
+  .service-form-modal .modal-header h2 {
+    font-size: 1.15rem;
+  }
+  
+  .service-form-modal .modal-header {
+    padding: 1rem;
+  }
+  
+  .service-form .modal-body {
+    padding: 1rem;
+  }
+  
+  .service-form .modal-footer {
+    padding: 1rem;
+  }
+  
+  .form-group {
+    gap: 0.35rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .form-group label {
+    font-size: 0.85rem;
+  }
+  
+  .image-upload-container {
+    padding: 1.25rem 0.75rem;
+  }
+  
+  .image-upload-label span {
+    font-size: 0.85rem;
+  }
+  
+  .image-upload-label small {
+    font-size: 0.75rem;
   }
 }

@@ -19,6 +19,8 @@ export interface Service {
   isActive: boolean;
   category: 'corte' | 'barba' | 'combo' | 'tratamento';
   image?: string;
+  // Propriedade opcional para armazenar a URL normalizada da imagem no front-end
+  normalizedImageUrl?: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -12,7 +12,9 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import type { Service } from '../../types';
+import { normalizeImageUrl, createImageFallbackHandler } from '../../utils/imageUtils';
 import './styles.css';
+import './loading.css';
 
 interface ServiceFormProps {
   service?: Service | null;
@@ -58,11 +60,10 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ service, onSubmit, onClose })
       });
 
       if (service.image) {
-        // Verificar se a URL já tem o protocolo ou o host completo
-        const imageUrl = service.image.startsWith('http') 
-          ? service.image 
-          : `${import.meta.env.VITE_API_URL.replace('/api', '')}/${service.image}`;
-        setPreviewUrl(imageUrl);
+        // Usar nossa função utilitária para normalizar a URL da imagem
+        const normalizedUrl = normalizeImageUrl(service.image);
+        console.log("URL normalizada:", normalizedUrl);
+        setPreviewUrl(normalizedUrl || '');
       }
     }
   }, [service]);
@@ -170,19 +171,34 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ service, onSubmit, onClose })
       formDataToSubmit.append('name', formData.name);
       formDataToSubmit.append('description', formData.description);
       formDataToSubmit.append('duration', formData.duration.toString());
-      formDataToSubmit.append('price', formData.price.toString());
+      // Usar toFixed(2) para garantir que o preço tenha duas casas decimais
+      formDataToSubmit.append('price', formData.price.toFixed(2));
       formDataToSubmit.append('category', formData.category);
       formDataToSubmit.append('isActive', formData.isActive.toString());
       
       // Adicionar imagem se houver uma nova
       if (imageFile) {
+        console.log("Enviando nova imagem:", imageFile.name, "Tamanho:", (imageFile.size / 1024).toFixed(2) + "KB");
         formDataToSubmit.append('image', imageFile);
       }
       
       // Se for para remover a imagem existente
       if (removeExistingImage) {
+        console.log("Solicitando remoção da imagem existente");
         formDataToSubmit.append('removeImage', 'true');
       }
+
+      // Log para debugging
+      console.log("Dados enviados:", {
+        name: formData.name,
+        description: `${formData.description.substring(0, 20)}...`,
+        duration: formData.duration,
+        price: formData.price.toFixed(2),
+        category: formData.category,
+        isActive: formData.isActive,
+        hasNewImage: !!imageFile,
+        removeImage: removeExistingImage
+      });
 
       await onSubmit(formDataToSubmit);
     } catch (error) {
@@ -280,18 +296,30 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ service, onSubmit, onClose })
                   <DollarSign size={18} />
                   Preço (R$)*
                 </label>
-                <input
-                  type="number"
-                  id="price"
-                  name="price"
-                  value={formData.price}
-                  onChange={handleInputChange}
-                  onBlur={handleBlur}
-                  min={0}
-                  step={0.01}
-                  placeholder="0.00"
-                  className={validationErrors.price && touched.price ? 'error' : ''}
-                />
+                <div className="price-input-container">
+                  <span className="price-prefix"></span>
+                  <input
+                    type="text"
+                    id="price"
+                    name="price"
+                    value={formData.price.toString().replace('.', ',')}
+                    onChange={(e) => {
+                      // Remove qualquer R$ e caracteres não numéricos, exceto vírgula
+                      const value = e.target.value.replace(/R\$\s*/g, '').replace(/[^\d,]/g, '');
+                      // Substitui vírgula por ponto para cálculo interno
+                      const numericValue = parseFloat(value.replace(',', '.')) || 0;
+                      setFormData(prev => ({
+                        ...prev,
+                        price: numericValue
+                      }));
+                      setTouched(prev => ({ ...prev, price: true }));
+                    }}
+                    onBlur={handleBlur}
+                    placeholder="0,00"
+                    className={validationErrors.price && touched.price ? 'error price-field' : 'price-field'}
+                    inputMode="decimal"
+                  />
+                </div>
                 {validationErrors.price && touched.price && (
                   <div className="error-message">
                     <AlertTriangle size={14} />
@@ -339,6 +367,7 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ service, onSubmit, onClose })
                       src={previewUrl} 
                       alt="Prévia da imagem" 
                       className="image-preview" 
+                      {...createImageFallbackHandler(previewUrl)}
                     />
                     <button 
                       type="button" 

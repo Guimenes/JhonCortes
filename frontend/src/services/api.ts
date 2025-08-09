@@ -141,14 +141,8 @@ export const servicesAPI = {
   },
 
   toggleActive: async (id: string, isActive: boolean): Promise<{ message: string; service: Service }> => {
-    const formData = new FormData();
-    formData.append('isActive', isActive.toString());
-    
-    const response = await api.put(`/services/${id}`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    // Enviar um objeto JSON simples em vez de FormData
+    const response = await api.put(`/services/${id}/toggle`, { isActive: isActive.toString() });
     return response.data;
   },
 };

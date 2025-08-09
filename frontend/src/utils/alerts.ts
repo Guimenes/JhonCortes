@@ -1,17 +1,72 @@
 import Swal from 'sweetalert2';
 import type { SweetAlertIcon, SweetAlertPosition } from 'sweetalert2';
 
-// Configuração padrão do SweetAlert2
-const defaultConfig = {
+// Configuração padrão do SweetAlert2 - Estilo moderno e minimalista
+export const defaultConfig = {
   confirmButtonColor: '#FFD700', // var(--primary-yellow)
   cancelButtonColor: '#6b7280',
   confirmButtonText: 'Confirmar',
   cancelButtonText: 'Cancelar',
   showClass: {
-    popup: 'animate__animated animate__fadeInDown animate__faster'
+    popup: 'animate__animated animate__fadeIn animate__faster'
   },
   hideClass: {
-    popup: 'animate__animated animate__fadeOutUp animate__faster'
+    popup: 'animate__animated animate__fadeOut animate__faster'
+  },
+  // Estilos modernos
+  buttonsStyling: true,
+  customClass: {
+    popup: 'modern-popup',
+    title: 'modern-title',
+    htmlContainer: 'modern-content',
+    confirmButton: 'modern-confirm',
+    cancelButton: 'modern-cancel'
+  },
+  // Bordas arredondadas e sombras modernas
+  background: '#ffffff',
+  backdrop: `rgba(15, 23, 42, 0.6)`,
+  padding: '1.25rem',
+  borderRadius: '16px',
+  // Adiciona estilos dinamicamente
+  didOpen: () => {
+    // Adiciona estilos customizados para os alerts
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .modern-popup {
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1) !important;
+        border-radius: 16px !important;
+        padding: 1.5rem !important;
+      }
+      .modern-title {
+        font-size: 1.5rem !important;
+        font-weight: 700 !important;
+        color: #0D0D0D !important;
+        margin-bottom: 0.5rem !important;
+      }
+      .modern-content {
+        color: #334155 !important;
+        font-size: 1rem !important;
+        line-height: 1.5 !important;
+        margin: 0.75rem 0 1.25rem !important;
+      }
+      .modern-confirm, .modern-cancel {
+        border-radius: 10px !important;
+        padding: 0.75rem 1.5rem !important;
+        font-weight: 600 !important;
+        font-size: 0.95rem !important;
+        box-shadow: none !important;
+        transition: all 0.2s ease !important;
+      }
+      .modern-confirm:hover, .modern-cancel:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+      }
+      .swal2-icon {
+        border-width: 3px !important;
+        margin: 1.25rem auto 1rem !important;
+      }
+    `;
+    document.head.appendChild(style);
   }
 };
 
@@ -22,7 +77,16 @@ export const showSuccess = (
   timer: number = 3000
 ) => {
   return Swal.fire({
-    ...defaultConfig,
+    // Usamos apenas algumas propriedades do defaultConfig, sem o backdrop
+    confirmButtonColor: defaultConfig.confirmButtonColor,
+    customClass: defaultConfig.customClass,
+    buttonsStyling: defaultConfig.buttonsStyling,
+    showClass: {
+      popup: 'animate__animated animate__fadeIn animate__faster'
+    },
+    hideClass: {
+      popup: 'animate__animated animate__fadeOut animate__faster'
+    },
     icon: 'success',
     title,
     text: message,
@@ -31,6 +95,8 @@ export const showSuccess = (
     toast: true,
     position: 'top-end' as SweetAlertPosition,
     timerProgressBar: true,
+    backdrop: false, // Explicitamente desativa o overlay
+    background: '#ffffff',
     didOpen: (toast) => {
       toast.addEventListener('mouseenter', Swal.stopTimer);
       toast.addEventListener('mouseleave', Swal.resumeTimer);
@@ -44,8 +110,8 @@ export const showError = (
   message?: string, 
   showConfirmButton: boolean = true
 ) => {
-  return Swal.fire({
-    ...defaultConfig,
+  // Configuração base
+  const baseConfig = {
     icon: 'error' as SweetAlertIcon,
     title,
     text: message,
@@ -54,7 +120,28 @@ export const showError = (
     toast: !showConfirmButton,
     position: !showConfirmButton ? 'top-end' as SweetAlertPosition : 'center' as SweetAlertPosition,
     timerProgressBar: !showConfirmButton,
-  });
+    showClass: {
+      popup: 'animate__animated animate__fadeIn animate__faster'
+    },
+    hideClass: {
+      popup: 'animate__animated animate__fadeOut animate__faster'
+    }
+  };
+
+  // Se for um toast (sem botão de confirmação), não queremos overlay
+  if (!showConfirmButton) {
+    return Swal.fire({
+      ...baseConfig,
+      backdrop: false,
+      background: '#ffffff'
+    });
+  } else {
+    // Se for um alert normal com botão, usamos o defaultConfig
+    return Swal.fire({
+      ...defaultConfig,
+      ...baseConfig
+    });
+  }
 };
 
 // Alert de aviso
@@ -63,8 +150,8 @@ export const showWarning = (
   message?: string, 
   showConfirmButton: boolean = true
 ) => {
-  return Swal.fire({
-    ...defaultConfig,
+  // Configuração base
+  const baseConfig = {
     icon: 'warning' as SweetAlertIcon,
     title,
     text: message,
@@ -73,7 +160,28 @@ export const showWarning = (
     toast: !showConfirmButton,
     position: !showConfirmButton ? 'top-end' as SweetAlertPosition : 'center' as SweetAlertPosition,
     timerProgressBar: !showConfirmButton,
-  });
+    showClass: {
+      popup: 'animate__animated animate__fadeIn animate__faster'
+    },
+    hideClass: {
+      popup: 'animate__animated animate__fadeOut animate__faster'
+    }
+  };
+
+  // Se for um toast (sem botão de confirmação), não queremos overlay
+  if (!showConfirmButton) {
+    return Swal.fire({
+      ...baseConfig,
+      backdrop: false,
+      background: '#ffffff'
+    });
+  } else {
+    // Se for um alert normal com botão, usamos o defaultConfig
+    return Swal.fire({
+      ...defaultConfig,
+      ...baseConfig
+    });
+  }
 };
 
 // Alert de informação
@@ -83,7 +191,9 @@ export const showInfo = (
   timer: number = 4000
 ) => {
   return Swal.fire({
-    ...defaultConfig,
+    // Configuração específica para toast sem overlay
+    confirmButtonColor: defaultConfig.confirmButtonColor,
+    customClass: defaultConfig.customClass,
     icon: 'info' as SweetAlertIcon,
     title,
     text: message,
@@ -92,6 +202,14 @@ export const showInfo = (
     toast: true,
     position: 'top-end' as SweetAlertPosition,
     timerProgressBar: true,
+    backdrop: false, // Sem overlay
+    background: '#ffffff',
+    showClass: {
+      popup: 'animate__animated animate__fadeIn animate__faster'
+    },
+    hideClass: {
+      popup: 'animate__animated animate__fadeOut animate__faster'
+    },
     didOpen: (toast) => {
       toast.addEventListener('mouseenter', Swal.stopTimer);
       toast.addEventListener('mouseleave', Swal.resumeTimer);
@@ -217,13 +335,21 @@ export const showSuccessWithRedirect = (
   timer: number = 2000
 ) => {
   return Swal.fire({
-    ...defaultConfig,
+    // Este não é um toast, mas também não queremos overlay para redirects rápidos
     icon: 'success' as SweetAlertIcon,
     title,
     text: message,
     timer,
     showConfirmButton: false,
-    willClose: redirectFn
+    willClose: redirectFn,
+    backdrop: false,
+    background: '#ffffff',
+    showClass: {
+      popup: 'animate__animated animate__fadeIn animate__faster'
+    },
+    hideClass: {
+      popup: 'animate__animated animate__fadeOut animate__faster'
+    }
   });
 };
 
@@ -292,6 +418,14 @@ export const showToast = (
     showConfirmButton: false,
     timer,
     timerProgressBar: true,
+    backdrop: false, // Sem overlay
+    background: '#ffffff',
+    showClass: {
+      popup: 'animate__animated animate__fadeIn animate__faster'
+    },
+    hideClass: {
+      popup: 'animate__animated animate__fadeOut animate__faster'
+    },
     didOpen: (toast) => {
       toast.addEventListener('mouseenter', Swal.stopTimer);
       toast.addEventListener('mouseleave', Swal.resumeTimer);

@@ -18,8 +18,16 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(helmet());
+// Middleware com configuração ajustada para permitir carregamento de imagens
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "blob:", "*"]
+    }
+  }
+}));
 
 // Configuração de CORS para múltiplos origins
 const allowedOrigins = process.env.FRONTEND_URLS 
@@ -48,8 +56,18 @@ app.use(morgan('combined'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Servir arquivos estáticos (uploads)
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Servir arquivos estáticos (uploads) com opções específicas para permitir acesso externo
+app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
+  setHeaders: (res, path) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Cross-Origin-Embedder-Policy', 'credentialless');
+    res.setHeader('Cache-Control', 'public, max-age=31536000'); // cache por 1 ano
+  }
+}));
+
+// Log para verificar o caminho absoluto da pasta de uploads
+console.log(`🖼️ Servindo arquivos estáticos de: ${path.join(__dirname, '../uploads')}`);
 
 // Database connection with retry (avoids crashing when MongoDB isn't up yet)
 const connectDB = async () => {

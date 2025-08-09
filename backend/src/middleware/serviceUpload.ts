@@ -32,6 +32,20 @@ const fileFilter = (req: any, file: any, cb: any) => {
   }
 };
 
+// Log para ajudar a diagnosticar problemas de upload
+console.log(`Diretório de uploads configurado: ${uploadsDir}`);
+console.log(`Diretório existe? ${fs.existsSync(uploadsDir) ? 'Sim' : 'Não'}`);
+console.log(`Permissões de escrita no diretório? Tentando criar arquivo de teste...`);
+
+try {
+  const testPath = path.join(uploadsDir, '.test');
+  fs.writeFileSync(testPath, 'test');
+  fs.unlinkSync(testPath);
+  console.log(`✅ Teste de escrita bem-sucedido`);
+} catch (error) {
+  console.error(`❌ Erro ao escrever no diretório: ${error}`);
+}
+
 // Configuração do multer
 export const uploadServiceImage = multer({
   storage,
