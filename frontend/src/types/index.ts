@@ -124,3 +124,18 @@ export interface ApiError {
 export interface AvailableSlots {
   availableSlots: string[];
 }
+
+export interface GalleryPhoto {
+  _id: string;
+  title: string;
+  category: 'cortes' | 'barbas' | 'tratamentos' | 'estilos';
+  imageUrl: string;
+  likes: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InstagramSettings {
+  handle: string;
+}

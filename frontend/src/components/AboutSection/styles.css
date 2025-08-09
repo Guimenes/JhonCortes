@@ -1,0 +1,447 @@
+/* AboutSection Styles */
+.about-section {
+  padding: 120px 0;
+  position: relative;
+  background: linear-gradient(to bottom, #f5f5f5 0%, #ffffff 100%);
+  overflow: hidden;
+}
+
+.about-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23FFD700' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  opacity: 0.4;
+}
+
+.about-container {
+  position: relative;
+  z-index: 1;
+}
+
+/* Animações */
+.animate-on-scroll {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease, transform 0.8s ease;
+}
+
+.animate-on-scroll.animate-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Layout principal */
+.about-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  margin-bottom: 80px;
+  align-items: center;
+}
+
+/* Coluna da Foto */
+.about-image-column {
+  position: relative;
+}
+
+.about-image-frame {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.about-image-frame::before {
+  content: '';
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  right: -20px;
+  bottom: -20px;
+  border: 4px solid var(--primary-gold);
+  border-radius: 10px;
+  z-index: -1;
+}
+
+.about-image-frame img {
+  width: 100%;
+  height: auto;
+  display: block;
+  transition: transform 0.5s ease;
+}
+
+.about-image-column:hover .about-image-frame img {
+  transform: scale(1.03);
+}
+
+.experience-badge {
+  position: absolute;
+  bottom: 30px;
+  right: -30px;
+  background: linear-gradient(135deg, var(--primary-gold), var(--primary-yellow));
+  color: var(--primary-black);
+  padding: 20px 30px;
+  border-radius: 8px;
+  box-shadow: 0 10px 20px rgba(184, 134, 11, 0.2);
+  text-align: center;
+  font-weight: bold;
+}
+
+.experience-number {
+  display: block;
+  font-size: 2.5rem;
+  line-height: 1;
+  margin-bottom: 5px;
+}
+
+.experience-text {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.signature {
+  margin-top: 30px;
+  text-align: right;
+}
+
+.signature-img {
+  height: 60px;
+  margin-right: 30px;
+}
+
+/* Coluna de Conteúdo */
+.about-content-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.section-subtitle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 15px;
+}
+
+.subtitle-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: var(--primary-gold);
+  border-radius: 50%;
+  color: var(--primary-black);
+}
+
+.section-subtitle span {
+  font-size: 0.9rem;
+  letter-spacing: 2px;
+  font-weight: 600;
+  color: var(--primary-gold);
+}
+
+.section-title {
+  font-size: 3rem;
+  font-weight: 800;
+  margin: 0 0 30px;
+  color: var(--primary-black);
+  position: relative;
+}
+
+.section-title::after {
+  content: '';
+  position: absolute;
+  bottom: -15px;
+  left: 0;
+  width: 80px;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary-gold), var(--primary-yellow));
+  border-radius: var(--radius-full);
+}
+
+.about-description {
+  margin-bottom: 40px;
+}
+
+.about-description p {
+  margin-bottom: 20px;
+  line-height: 1.8;
+  color: var(--dark-gray);
+  font-size: 1.05rem;
+}
+
+.about-description p:last-child {
+  margin-bottom: 0;
+}
+
+/* Citação */
+.about-quote {
+  margin-bottom: 30px;
+  position: relative;
+}
+
+.about-quote blockquote {
+  position: relative;
+  font-style: italic;
+  font-size: 1.2rem;
+  line-height: 1.6;
+  color: var(--primary-black);
+  padding: 25px 30px 25px 50px;
+  background: rgba(255, 215, 0, 0.05);
+  border-left: 4px solid var(--primary-gold);
+  border-radius: 0 8px 8px 0;
+  margin: 0;
+}
+
+.about-quote blockquote::before {
+  content: "\201C"; /* Aspas curvas iniciais em Unicode */
+  position: absolute;
+  top: 10px;
+  left: 15px;
+  font-size: 3rem;
+  line-height: 1;
+  color: var(--primary-gold);
+  font-family: Georgia, serif;
+}
+
+.about-quote cite {
+  display: block;
+  margin-top: 15px;
+  font-style: normal;
+  font-weight: 600;
+}
+
+/* Conquistas */
+.achievements-section {
+  margin-bottom: 80px;
+}
+
+.achievements-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 30px;
+}
+
+.achievement-card {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  transition: all 0.3s ease;
+}
+
+.achievement-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+}
+
+.achievement-icon {
+  width: 70px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--primary-yellow), var(--primary-gold));
+  border-radius: 50%;
+  margin: 0 auto 20px;
+  color: var(--primary-black);
+}
+
+.achievement-count {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 5px;
+  color: var(--primary-black);
+  background: linear-gradient(135deg, var(--primary-black), #444);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.achievement-title {
+  font-size: 1.1rem;
+  margin: 0 0 10px;
+  color: var(--primary-black);
+}
+
+.achievement-description {
+  font-size: 0.9rem;
+  color: var(--dark-gray);
+  line-height: 1.5;
+}
+
+/* CTA Section */
+.about-cta {
+  background: linear-gradient(135deg, var(--primary-black), var(--secondary-black));
+  padding: 50px;
+  border-radius: 16px;
+  text-align: center;
+  color: white;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.about-cta h3 {
+  font-size: 2rem;
+  margin: 0 0 15px;
+}
+
+.about-cta p {
+  font-size: 1.1rem;
+  margin-bottom: 30px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.btn-lg {
+  padding: 15px 30px;
+  font-size: 1.1rem;
+}
+
+/* Responsividade */
+@media (max-width: 1024px) {
+  .about-section {
+    padding: 100px 0;
+  }
+  
+  .section-title {
+    font-size: 2.5rem;
+  }
+  
+  .achievements-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+  
+  .about-grid {
+    gap: 40px;
+  }
+}
+
+@media (max-width: 768px) {
+  .about-section {
+    padding: 80px 0;
+  }
+  
+  .about-grid {
+    grid-template-columns: 1fr;
+    gap: 50px;
+  }
+  
+  .about-image-column {
+    order: 1;
+  }
+  
+  .about-content-column {
+    order: 2;
+  }
+  
+  .section-title {
+    font-size: 2rem;
+  }
+  
+  .experience-badge {
+    bottom: 20px;
+    right: -20px;
+    padding: 15px 25px;
+  }
+  
+  .experience-number {
+    font-size: 2rem;
+  }
+  
+  .experience-text {
+    font-size: 0.8rem;
+  }
+  
+  .about-cta h3 {
+    font-size: 1.75rem;
+  }
+  
+  .about-cta {
+    padding: 40px 30px;
+  }
+}
+
+@media (max-width: 480px) {
+  .about-section {
+    padding: 60px 0;
+  }
+  
+  .about-grid {
+    gap: 40px;
+  }
+  
+  .section-subtitle span {
+    font-size: 0.8rem;
+  }
+  
+  .section-title {
+    font-size: 1.75rem;
+  }
+  
+  .about-description p {
+    font-size: 1rem;
+  }
+  
+  .about-quote blockquote {
+    font-size: 1rem;
+    padding: 20px 20px 20px 40px;
+  }
+  
+  .experience-badge {
+    position: relative;
+    bottom: 40px;
+    right: auto;
+    left: 20px;
+    display: inline-block;
+  }
+  
+  .signature {
+    text-align: center;
+    margin-top: 0;
+  }
+  
+  .signature-img {
+    margin-right: 0;
+  }
+  
+  .achievements-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .achievement-card {
+    padding: 25px 20px;
+  }
+  
+  .achievement-icon {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .achievement-count {
+    font-size: 2rem;
+  }
+  
+  .about-cta {
+    padding: 30px 20px;
+  }
+  
+  .about-cta h3 {
+    font-size: 1.5rem;
+  }
+  
+  .about-cta p {
+    font-size: 1rem;
+  }
+  
+  .btn-lg {
+    padding: 12px 25px;
+    font-size: 1rem;
+  }
+}

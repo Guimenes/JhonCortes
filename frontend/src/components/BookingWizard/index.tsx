@@ -10,6 +10,7 @@ import './styles.css';
 interface BookingWizardProps {
   onClose: () => void;
   onSuccess?: () => void;
+  initialService?: Service | null;
 }
 
 type Step = 1 | 2 | 3 | 4 | 5;
@@ -21,13 +22,15 @@ interface BookingData {
   notes?: string;
 }
 
-const BookingWizard: React.FC<BookingWizardProps> = ({ onClose, onSuccess }) => {
+const BookingWizard: React.FC<BookingWizardProps> = ({ onClose, onSuccess, initialService }) => {
   const [currentStep, setCurrentStep] = useState<Step>(1);
   const [services, setServices] = useState<Service[]>([]);
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(false);
-  const [bookingData, setBookingData] = useState<BookingData>({ services: [] });
+  const [bookingData, setBookingData] = useState<BookingData>({ 
+    services: initialService ? [initialService] : [] 
+  });
 
   const steps = [
     { number: 1, title: 'Escolha o Serviço', icon: Scissors },
@@ -40,6 +43,11 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ onClose, onSuccess }) => 
   useEffect(() => {
     loadServices();
     loadSchedules();
+    
+    // Se tiver um serviço inicial, ir para o passo da seleção de data
+    if (initialService && bookingData.services.length > 0) {
+      setCurrentStep(2);
+    }
   }, []);
 
   useEffect(() => {
@@ -60,6 +68,17 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ onClose, onSuccess }) => 
           normalizedImageUrl: service.image ? normalizeImageUrl(service.image) : undefined
         }));
       setServices(normalizedServices);
+      
+      // Se temos um serviço pré-selecionado, garantir que ele seja substituído pelo normalizado
+      if (initialService && bookingData.services.length > 0) {
+        const initialServiceWithNormalized = normalizedServices.find(s => s._id === initialService._id);
+        if (initialServiceWithNormalized) {
+          setBookingData(prev => ({
+            ...prev,
+            services: [initialServiceWithNormalized]
+          }));
+        }
+      }
     } catch (error) {
       showError('Erro', 'Não foi possível carregar os serviços.');
     } finally {

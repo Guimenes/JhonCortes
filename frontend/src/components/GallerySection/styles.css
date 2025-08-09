@@ -1,0 +1,574 @@
+/* GallerySection Styles */
+.gallery-section {
+  padding: 120px 0;
+  position: relative;
+  background-color: var(--light-gray);
+  overflow: hidden;
+}
+
+/* Animações */
+.gallery-animate {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease, transform 0.8s ease;
+}
+
+.gallery-animate.animate-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Cabeçalho da galeria */
+.gallery-header {
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto 60px;
+}
+
+.section-subtitle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 15px;
+}
+
+.subtitle-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: var(--primary-gold);
+  border-radius: 50%;
+  color: var(--primary-black);
+}
+
+.section-subtitle span {
+  font-size: 0.9rem;
+  letter-spacing: 2px;
+  font-weight: 600;
+  color: var(--primary-gold);
+}
+
+.section-title {
+  font-size: 3rem;
+  font-weight: 800;
+  margin: 0 0 30px;
+  color: var(--primary-black);
+  position: relative;
+}
+
+.section-title::after {
+  content: '';
+  position: absolute;
+  bottom: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary-gold), var(--primary-yellow));
+  border-radius: var(--radius-full);
+}
+
+.gallery-description {
+  margin: 30px auto 0;
+  max-width: 600px;
+  color: var(--dark-gray);
+  font-size: 1.05rem;
+}
+
+/* Filtros da galeria */
+.gallery-filters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 40px;
+}
+
+.gallery-filter-btn {
+  background: transparent;
+  border: 2px solid var(--primary-black);
+  color: var(--primary-black);
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 8px 20px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.gallery-filter-btn:hover {
+  background: var(--primary-black);
+  color: var(--white);
+}
+
+.gallery-filter-btn.active {
+  background: var(--primary-black);
+  color: var(--primary-yellow);
+  border-color: var(--primary-black);
+}
+
+/* Container da galeria */
+.gallery-container {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  margin-bottom: 30px;
+  min-height: 300px;
+}
+
+/* Estado de carregamento */
+.gallery-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 0;
+  width: 100%;
+}
+
+.gallery-loading .spinner {
+  width: 50px;
+  height: 50px;
+  border: 3px solid rgba(255, 215, 0, 0.2);
+  border-top: 3px solid var(--primary-yellow);
+  border-radius: 50%;
+  margin-bottom: 20px;
+  animation: spin 1s linear infinite;
+}
+
+.gallery-loading p {
+  color: var(--dark-gray);
+  font-size: 1.1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.gallery-slider {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  width: 100%;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Efeito de transição ao filtrar itens */
+.gallery-item {
+  animation: fadeInScale 0.5s ease forwards;
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.gallery-item {
+  position: relative;
+  overflow: hidden;
+  height: 350px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+.gallery-image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.gallery-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.gallery-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 20px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0) 100%);
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.3s ease;
+}
+
+.gallery-item:hover .gallery-image {
+  transform: scale(1.05);
+}
+
+.gallery-item:hover .gallery-overlay {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.gallery-overlay h3 {
+  color: var(--white);
+  margin: 0 0 10px;
+  font-size: 1.25rem;
+}
+
+.gallery-meta {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.gallery-likes {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--primary-yellow);
+  font-size: 0.9rem;
+}
+
+.gallery-view-btn {
+  background: var(--primary-yellow);
+  color: var(--primary-black);
+  border: none;
+  padding: 8px 15px;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.gallery-view-btn:hover {
+  background: var(--primary-gold);
+  transform: translateY(-2px);
+}
+
+/* Controles do carrossel */
+.gallery-controls {
+  position: absolute;
+  top: 50%;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.gallery-control {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-black);
+  color: var(--primary-yellow);
+  border: 2px solid var(--primary-yellow);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: all 0.3s ease;
+  pointer-events: auto;
+  opacity: 0.8;
+}
+
+.gallery-control:hover {
+  background: var(--primary-yellow);
+  color: var(--primary-black);
+  transform: scale(1.1);
+  opacity: 1;
+}
+
+.gallery-control.prev {
+  margin-left: -25px;
+}
+
+.gallery-control.next {
+  margin-right: -25px;
+}
+
+/* Indicadores de slide */
+.gallery-indicators {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 30px;
+  margin-bottom: 60px;
+}
+
+.gallery-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--gray);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.gallery-indicator.active {
+  background: var(--primary-yellow);
+  transform: scale(1.2);
+}
+
+/* Modal de visualização */
+.gallery-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.gallery-modal-content {
+  position: relative;
+  max-width: 900px;
+  max-height: 90vh;
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: zoomIn 0.3s ease;
+}
+
+@keyframes zoomIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.gallery-modal-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  width: 40px;
+  height: 40px;
+  background: var(--primary-black);
+  color: var(--white);
+  border: none;
+  border-radius: 50%;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: all 0.3s ease;
+}
+
+.gallery-modal-close:hover {
+  background: var(--error);
+  transform: rotate(90deg);
+}
+
+.gallery-modal-image {
+  width: 100%;
+  height: auto;
+  max-height: 70vh;
+  object-fit: contain;
+  cursor: zoom-in;
+  transition: transform 0.3s ease;
+}
+
+.gallery-modal-image:hover {
+  transform: scale(1.05);
+}
+
+.gallery-modal-info {
+  padding: 20px;
+  background: var(--white);
+}
+
+.gallery-modal-info h3 {
+  margin: 0 0 10px;
+  color: var(--primary-black);
+  font-size: 1.5rem;
+}
+
+.gallery-modal-info p {
+  margin: 0 0 15px;
+  color: var(--dark-gray);
+}
+
+.gallery-modal-meta {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+/* Instagram CTA */
+.instagram-cta {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, #405DE6, #5851DB, #833AB4, #C13584, #E1306C, #FD1D1D);
+  padding: 40px;
+  border-radius: var(--radius-lg);
+  margin-top: 80px;
+  color: var(--white);
+}
+
+.instagram-icon {
+  background: rgba(255, 255, 255, 0.2);
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 30px;
+}
+
+.instagram-content {
+  flex: 1;
+}
+
+.instagram-content h3 {
+  color: var(--white);
+  margin: 0 0 10px;
+  font-size: 1.5rem;
+}
+
+.instagram-content p {
+  margin: 0;
+  opacity: 0.9;
+  color: var(--white);
+}
+
+.instagram-cta .btn {
+  background: var(--white);
+  color: #C13584;
+  font-weight: 600;
+}
+
+.instagram-cta .btn:hover {
+  background: var(--light-gray);
+  transform: translateY(-2px);
+}
+
+/* Responsividade */
+@media (max-width: 1024px) {
+  .gallery-section {
+    padding: 100px 0;
+  }
+  
+  .section-title {
+    font-size: 2.5rem;
+  }
+  
+  .gallery-slider {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .gallery-item {
+    height: 300px;
+  }
+  
+  .instagram-cta {
+    flex-direction: column;
+    text-align: center;
+    padding: 30px;
+  }
+  
+  .instagram-icon {
+    margin: 0 0 20px;
+  }
+  
+  .instagram-content {
+    margin-bottom: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .gallery-section {
+    padding: 80px 0;
+  }
+  
+  .section-title {
+    font-size: 2rem;
+  }
+  
+  .gallery-slider {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+  }
+  
+  .gallery-item {
+    height: 250px;
+  }
+  
+  .gallery-control {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .gallery-overlay h3 {
+    font-size: 1.1rem;
+  }
+  
+  .gallery-modal-image {
+    max-height: 60vh;
+  }
+}
+
+@media (max-width: 576px) {
+  .gallery-section {
+    padding: 60px 0;
+  }
+  
+  .gallery-slider {
+    grid-template-columns: repeat(1, 1fr);
+    gap: 10px;
+  }
+  
+  .gallery-item {
+    height: 200px;
+  }
+  
+  .gallery-filters {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .gallery-filter-btn {
+    font-size: 0.8rem;
+    padding: 6px 15px;
+  }
+  
+  .gallery-controls {
+    display: none;
+  }
+  
+  .instagram-cta {
+    padding: 25px 15px;
+  }
+  
+  .instagram-icon {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .instagram-content h3 {
+    font-size: 1.3rem;
+  }
+}

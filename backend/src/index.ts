@@ -12,6 +12,7 @@ import appointmentRoutes from './routes/appointments';
 import userRoutes from './routes/users';
 import serviceRoutes from './routes/services';
 import scheduleRoutes from './routes/schedules';
+import galleryRoutes from './routes/gallery';
 
 dotenv.config();
 
@@ -99,6 +100,7 @@ app.use('/api/appointments', appointmentRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/schedules', scheduleRoutes);
+app.use('/api/gallery', galleryRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

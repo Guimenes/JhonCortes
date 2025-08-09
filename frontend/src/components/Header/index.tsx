@@ -221,6 +221,9 @@ const Header: React.FC<HeaderProps> = ({ onBookingClick }) => {
                     <Link to="/admin/schedules" onClick={() => setIsAdminDropdownOpen(false)}>
                       <Calendar size={14} /> Horários e Indisponibilidades
                     </Link>
+                    <Link to="/admin/gallery" onClick={() => setIsAdminDropdownOpen(false)}>
+                      <Image size={14} /> Gerenciar Galeria
+                    </Link>
                   </div>
                 )}
               </li>
@@ -358,6 +361,15 @@ const Header: React.FC<HeaderProps> = ({ onBookingClick }) => {
                     className={isActive('/admin/schedules') ? 'active' : ''}
                   >
                     <Calendar size={18} /> Horários e Indisponibilidades
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    to="/admin/gallery" 
+                    onClick={() => setIsMenuOpen(false)}
+                    className={isActive('/admin/gallery') ? 'active' : ''}
+                  >
+                    <Image size={18} /> Gerenciar Galeria
                   </Link>
                 </li>
               </>

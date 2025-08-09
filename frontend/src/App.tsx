@@ -3,17 +3,29 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Header from './components/Header'
 import Footer from './components/Footer'
 import Hero from './components/Hero'
+import ServicesSection from './components/ServicesSection'
+import AboutSection from './components/AboutSection'
+import GallerySection from './components/GallerySection'
 import AuthPage from './pages/Auth'
 import AdminServices from './pages/AdminServices'
 import AdminSchedules from './pages/AdminSchedules'
+import AdminGallery from './pages/AdminGallery'
 import UserBooking from './pages/UserBooking'
+import BookingWizard from './components/BookingWizard'
 import './App.css'
 import { AuthProvider } from './hooks/useAuth'
+import type { Service } from './types'
 
 function App() {
   const [showBookingModal, setShowBookingModal] = useState(false)
+  const [preSelectedService, setPreSelectedService] = useState<Service | null>(null)
 
-  const handleBookingClick = () => {
+  const handleBookingClick = (service?: Service) => {
+    if (service) {
+      setPreSelectedService(service)
+    } else {
+      setPreSelectedService(null)
+    }
     setShowBookingModal(true)
   }
 
@@ -28,27 +40,12 @@ function App() {
             <main>
               <Hero onBookingClick={handleBookingClick} />
               
-              {/* Placeholder sections for the landing page */}
-              <section id="servicos" style={{ padding: '100px 0', textAlign: 'center', background: '#f5f5f5' }}>
-                <div className="container">
-                  <h2>Nossos Serviços</h2>
-                  <p>Em breve: Seção completa de serviços</p>
-                </div>
-              </section>
+              {/* Seção de Serviços */}
+              <ServicesSection onBookingClick={handleBookingClick} />
               
-              <section id="sobre" style={{ padding: '100px 0', textAlign: 'center' }}>
-                <div className="container">
-                  <h2>Sobre Jhon Cortes</h2>
-                  <p>Em breve: História e experiência do profissional</p>
-                </div>
-              </section>
+              <AboutSection />
               
-              <section id="galeria" style={{ padding: '100px 0', textAlign: 'center', background: '#f5f5f5' }}>
-                <div className="container">
-                  <h2>Galeria</h2>
-                  <p>Em breve: Galeria de trabalhos realizados</p>
-                </div>
-              </section>
+              <GallerySection />
               
               <section id="contato" style={{ padding: '100px 0', textAlign: 'center' }}>
                 <div className="container">
@@ -63,47 +60,16 @@ function App() {
           <Route path="/booking" element={<UserBooking />} />
           <Route path="/admin/services" element={<AdminServices />} />
           <Route path="/admin/schedules" element={<AdminSchedules />} />
+          <Route path="/admin/gallery" element={<AdminGallery />} />
         </Routes>
         
-        {/* Modal de agendamento - placeholder */}
+        {/* Modal de agendamento com BookingWizard */}
         {showBookingModal && (
-          <div 
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'rgba(0,0,0,0.5)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 9999
-            }}
-            onClick={() => setShowBookingModal(false)}
-          >
-            <div 
-              style={{
-                background: 'white',
-                padding: '2rem',
-                borderRadius: '12px',
-                maxWidth: '400px',
-                width: '90%',
-                textAlign: 'center'
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3>Sistema de Agendamento</h3>
-              <p>Em desenvolvimento...</p>
-              <p>Em breve você poderá agendar seus horários online!</p>
-              <button 
-                className="btn btn-primary mt-4"
-                onClick={() => setShowBookingModal(false)}
-              >
-                Fechar
-              </button>
-            </div>
-          </div>
+          <BookingWizard 
+            onClose={() => setShowBookingModal(false)}
+            onSuccess={() => setShowBookingModal(false)} 
+            initialService={preSelectedService}
+          />
         )}
         <Footer />
         </div>

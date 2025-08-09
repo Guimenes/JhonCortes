@@ -13,6 +13,8 @@ import type {
   CreateUnavailabilityData,
   UpdateProfileData,
   AvailableSlots,
+  GalleryPhoto,
+  InstagramSettings,
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -313,6 +315,76 @@ export const unavailabilitiesAPI = {
 
   deletePermanent: async (id: string): Promise<{ message: string }> => {
     const response = await api.delete(`/schedules/unavailabilities/${id}/permanent`);
+    return response.data;
+  },
+};
+
+// Galeria endpoints
+export const galleryAPI = {
+  getAll: async (): Promise<GalleryPhoto[]> => {
+    const response = await api.get('/gallery');
+    return response.data;
+  },
+
+  getById: async (id: string): Promise<GalleryPhoto> => {
+    const response = await api.get(`/gallery/${id}`);
+    return response.data;
+  },
+
+  getByCategory: async (category: string): Promise<GalleryPhoto[]> => {
+    const response = await api.get(`/gallery/category/${category}`);
+    return response.data;
+  },
+
+  // Admin endpoints
+  getAllAdmin: async (): Promise<GalleryPhoto[]> => {
+    const response = await api.get('/gallery/admin/all');
+    return response.data;
+  },
+
+  create: async (data: FormData): Promise<{ success: boolean; message: string; photo: GalleryPhoto }> => {
+    const response = await api.post('/gallery', data, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  update: async (id: string, data: FormData): Promise<{ success: boolean; message: string; photo: GalleryPhoto }> => {
+    const response = await api.put(`/gallery/${id}`, data, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<{ success: boolean; message: string }> => {
+    const response = await api.delete(`/gallery/${id}`);
+    return response.data;
+  },
+
+  toggleActive: async (id: string): Promise<{ success: boolean; message: string; photo: GalleryPhoto }> => {
+    const response = await api.patch(`/gallery/${id}/toggle`);
+    return response.data;
+  },
+  
+  like: async (id: string): Promise<{ success: boolean; message: string; likes: number }> => {
+    const response = await api.post(`/gallery/${id}/like`);
+    return response.data;
+  },
+};
+
+// Instagram settings endpoints
+export const settingsAPI = {
+  getInstagramHandle: async (): Promise<InstagramSettings> => {
+    const response = await api.get('/settings/instagram');
+    return response.data;
+  },
+
+  updateInstagramHandle: async (handle: string): Promise<{ success: boolean; message: string }> => {
+    const response = await api.post('/settings/instagram', { handle });
     return response.data;
   },
 };
