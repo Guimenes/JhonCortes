@@ -23,35 +23,24 @@ export const normalizeImageUrl = (imagePath: string | undefined): string | undef
     return imagePath;
   }
   
-  // Definir estratégias de URL base
-  const baseUrlStrategies: string[] = [];
+  // Garantir que a URL da API está disponível
+  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
   
+  // Extrair o domínio base da URL da API
+  let baseUrl = '';
   try {
-    // Estratégia 1: Usar a origem atual do navegador (para produção)
-    baseUrlStrategies.push(window.location.origin);
+    // Remover '/api' do final da URL, se existir
+    baseUrl = apiBaseUrl.replace(/\/api\/?$/, '');
     
-    // Estratégia 2: Se estamos em desenvolvimento com Vite, usar a URL da API configurada
-    if (import.meta.env.VITE_API_URL) {
-      const apiUrl = new URL(import.meta.env.VITE_API_URL);
-      const baseUrl = `${apiUrl.protocol}//${apiUrl.host}`;
-      if (!baseUrlStrategies.includes(baseUrl)) {
-        baseUrlStrategies.push(baseUrl);
-      }
+    // Se o baseUrl ainda não terminar com '/', adicionar
+    if (!baseUrl.endsWith('/')) {
+      baseUrl = `${baseUrl}/`;
     }
     
-    console.log(`[ImageUtils] Estratégias de URL base: ${baseUrlStrategies.join(', ')}`);
+    console.log(`[ImageUtils] URL base da API: ${baseUrl}`);
   } catch (error) {
-    console.error("[ImageUtils] Erro ao determinar URLs base:", error);
-    // Fallback para método simples
-    baseUrlStrategies.push(window.location.origin);
-    
-    if (import.meta.env.VITE_API_URL) {
-      try {
-        baseUrlStrategies.push(import.meta.env.VITE_API_URL.replace('/api', ''));
-      } catch (e) {
-        console.error("[ImageUtils] Erro no fallback:", e);
-      }
-    }
+    console.error("[ImageUtils] Erro ao processar URL base:", error);
+    baseUrl = window.location.origin + '/';
   }
   
   // Normalizar o caminho da imagem (remover barras duplicadas)
@@ -60,9 +49,8 @@ export const normalizeImageUrl = (imagePath: string | undefined): string | undef
     normalizedImagePath = normalizedImagePath.slice(1);
   }
   
-  // Usar a primeira estratégia (mais provável de funcionar)
-  const baseUrl = baseUrlStrategies[0];
-  const fullUrl = `${baseUrl}/${normalizedImagePath}`;
+  // Garantir que não haja barras duplicadas
+  const fullUrl = `${baseUrl}${normalizedImagePath}`;
   console.log(`[ImageUtils] Caminho normalizado: "${imagePath}" -> "${fullUrl}"`);
   
   return fullUrl;
@@ -110,37 +98,38 @@ export const createImageFallbackHandler = (
       // Lista de estratégias alternativas
       const strategies: string[] = [];
       
-      // Estratégia 1: Usar a origem atual para caminhos relativos
-      if (!originalSrc.startsWith('http') && 
-          !originalSrc.startsWith('data:') && 
-          !originalSrc.startsWith('blob:')) {
+      // Estratégia 1: Usar API URL diretamente
+      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const baseUrl = apiBaseUrl.replace(/\/api\/?$/, '');
+      
+      if (!originalSrc.startsWith('http') && !originalSrc.startsWith('data:') && !originalSrc.startsWith('blob:')) {
         const relativePath = originalSrc.replace(/^\//, '');
-        strategies.push(`${window.location.origin}/${relativePath}`);
+        strategies.push(`${baseUrl}/${relativePath}`);
       }
       
-      // Estratégia 2: Usar a URL da API diretamente (sem /api)
-      if (import.meta.env.VITE_API_URL && 
-          !originalSrc.startsWith('data:') && 
-          !originalSrc.startsWith('blob:')) {
-        try {
-          const apiUrl = new URL(import.meta.env.VITE_API_URL);
-          const baseUrl = `${apiUrl.protocol}//${apiUrl.host}`;
-          const imagePath = originalSrc.replace(/^https?:\/\/[^/]+\//, '').replace(/^\//, '');
-          strategies.push(`${baseUrl}/${imagePath}`);
-        } catch (err) {
-          console.error("[ImageUtils] Erro ao construir URL da API:", err);
-        }
-      }
-      
-      // Estratégia 3: Tentar caminho absoluto sem domínio
+      // Estratégia 2: Usar a origem atual para caminhos absolutos
       if (originalSrc.startsWith('/')) {
         strategies.push(`${window.location.origin}${originalSrc}`);
+      }
+      
+      // Estratégia 3: Tentar URL absolutamente básica
+      const pathOnly = originalSrc.replace(/^https?:\/\/[^/]+\//, '').replace(/^\//, '');
+      strategies.push(`${window.location.origin}/${pathOnly}`);
+      
+      // Estratégia 4: Tentar caminho direto para uploads
+      if (originalSrc.includes('uploads/')) {
+        const uploadsPath = originalSrc.substring(originalSrc.indexOf('uploads/'));
+        strategies.push(`${baseUrl}/${uploadsPath}`);
       }
       
       // Tentar próxima estratégia ou mostrar placeholder
       if (strategies.length > 0) {
         const nextUrl = strategies.shift() as string;
         console.log("[ImageUtils] Tentando estratégia alternativa:", nextUrl);
+        
+        // Adicionar atributo crossOrigin para evitar problemas de CORS
+        target.crossOrigin = "anonymous";
+        target.referrerPolicy = "no-referrer";
         target.src = nextUrl;
         
         // Configurar nova função onError para as próximas tentativas
@@ -162,5 +151,25 @@ export const createImageFallbackHandler = (
         target.onerror = null; // Previne loop infinito
       }
     }
+  };
+};
+
+/**
+ * Componente para usar em elementos <img> que necessitem do atributo crossOrigin 
+ * para carregar imagens de outros domínios sem problemas de CORS
+ * 
+ * @returns Objeto com atributos para o elemento img
+ * 
+ * @example
+ * <img 
+ *   src={imageUrl} 
+ *   alt="Descrição" 
+ *   {...createCrossOriginProps()}
+ * />
+ */
+export const createCrossOriginProps = () => {
+  return {
+    crossOrigin: "anonymous" as const,
+    referrerPolicy: "no-referrer" as const
   };
 };

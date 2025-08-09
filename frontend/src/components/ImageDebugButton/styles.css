@@ -1,0 +1,165 @@
+.image-debug-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+}
+
+.debug-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #1a1a1a;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  font-size: 12px;
+}
+
+.debug-button:hover {
+  opacity: 1;
+}
+
+.debug-panel {
+  position: absolute;
+  bottom: 40px;
+  right: 0;
+  width: 380px;
+  max-height: 500px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  overflow-y: auto;
+  border: 1px solid #e0e0e0;
+}
+
+.debug-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  background-color: #1a1a1a;
+  color: white;
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+}
+
+.debug-panel-header h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.debug-panel-content {
+  padding: 15px;
+}
+
+.run-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  cursor: pointer;
+  width: 100%;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.run-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.debug-results {
+  background-color: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 10px;
+  margin-bottom: 15px;
+  font-size: 12px;
+}
+
+.debug-results h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+.error-message {
+  color: #dc3545;
+  padding: 10px;
+  background-color: #f8d7da;
+  border-radius: 4px;
+}
+
+.config-info {
+  margin-bottom: 15px;
+  line-height: 1.6;
+  word-break: break-all;
+}
+
+.test-results {
+  margin-bottom: 15px;
+}
+
+.test-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.test-item:last-child {
+  border-bottom: none;
+}
+
+.success {
+  color: #28a745;
+}
+
+.failure {
+  color: #dc3545;
+}
+
+.server-files {
+  border-top: 1px solid #eee;
+  padding-top: 10px;
+}
+
+.folder-info {
+  margin: 5px 0;
+}
+
+.debug-instructions {
+  font-size: 12px;
+  color: #6c757d;
+  text-align: center;
+}

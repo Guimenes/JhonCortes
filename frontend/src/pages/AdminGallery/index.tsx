@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Upload, Trash, Edit, Save, X, Image as ImageIcon } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { galleryAPI, settingsAPI } from '../../services/api';
+import { createImageFallbackHandler } from '../../utils/imageUtils';
 import type { GalleryPhoto as IGalleryPhoto } from '../../types';
 import './styles.css';
 
@@ -66,14 +67,20 @@ const AdminGallery: React.FC = () => {
         const data = await galleryAPI.getAllAdmin();
         
         // Converter formato da API para o formato usado pelo componente
-        const formattedPhotos = data.map(photo => ({
-          id: photo._id,
-          url: `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${photo.imageUrl}`,
-          title: photo.title,
-          category: photo.category,
-          likes: photo.likes,
-          createdAt: photo.createdAt
-        }));
+        const formattedPhotos = data.map(photo => {
+          // Extrai a URL base da API sem o '/api'
+          const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+          const baseUrl = apiUrl.replace(/\/api\/?$/, '');
+          
+          return {
+            id: photo._id,
+            url: `${baseUrl}${photo.imageUrl}`,
+            title: photo.title,
+            category: photo.category,
+            likes: photo.likes,
+            createdAt: photo.createdAt
+          };
+        });
         
         setPhotos(formattedPhotos);
         setIsLoading(false);
@@ -389,7 +396,12 @@ const AdminGallery: React.FC = () => {
               {/* Preview da imagem */}
               {previewUrl && (
                 <div className="image-preview">
-                  <img src={previewUrl} alt="Preview" />
+                  <img 
+                    src={previewUrl} 
+                    alt="Preview" 
+                    crossOrigin="anonymous" 
+                    {...createImageFallbackHandler(previewUrl, 'https://placehold.co/600x400/1A1A1A/FFF?text=Preview+indisponível')}
+                  />
                 </div>
               )}
               
@@ -448,7 +460,12 @@ const AdminGallery: React.FC = () => {
               {photos.map(photo => (
                 <div className="photo-card" key={photo.id}>
                   <div className="photo-image">
-                    <img src={photo.url} alt={photo.title} />
+                    <img 
+                      src={photo.url} 
+                      alt={photo.title} 
+                      crossOrigin="anonymous" 
+                      {...createImageFallbackHandler(photo.url, 'https://placehold.co/600x400/1A1A1A/FFF?text=Imagem+indisponível')}
+                    />
                   </div>
                   <div className="photo-content">
                     <h3>{photo.title}</h3>

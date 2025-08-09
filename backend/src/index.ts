@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import path from 'path';
+import fs from 'fs';
 
 // Import routes
 import authRoutes from './routes/auth';
@@ -59,13 +60,69 @@ app.use(express.urlencoded({ extended: true }));
 
 // Servir arquivos estáticos (uploads) com opções específicas para permitir acesso externo
 app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
-  setHeaders: (res, path) => {
+  setHeaders: (res, _path) => {
+    // Configurações para permitir acesso às imagens
     res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     res.setHeader('Cross-Origin-Embedder-Policy', 'credentialless');
     res.setHeader('Cache-Control', 'public, max-age=31536000'); // cache por 1 ano
+    
+    // Adicionar cabeçalhos para debug
+    console.log('Servindo arquivo estático:', _path);
   }
 }));
+
+// Endpoint de diagnóstico para verificar o status dos uploads
+app.get('/api/debug/uploads', (req, res) => {
+  try {
+    const uploadsDir = path.join(__dirname, '../uploads');
+    const subfolders = ['services', 'avatars', 'gallery'].filter(folder => 
+      fs.existsSync(path.join(uploadsDir, folder))
+    );
+    
+    const files: Record<string, string[]> = {};
+    
+    subfolders.forEach(folder => {
+      const folderPath = path.join(uploadsDir, folder);
+      if (fs.existsSync(folderPath)) {
+        files[folder] = fs.readdirSync(folderPath);
+      }
+    });
+    
+    res.json({
+      success: true,
+      message: 'Status dos diretórios de uploads',
+      uploadsPath: uploadsDir,
+      folders: subfolders,
+      files,
+      serverOrigin: `${req.protocol}://${req.get('host')}`
+    });
+  } catch (error) {
+    console.error('Erro ao verificar uploads:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao verificar diretórios de upload',
+      error: String(error)
+    });
+  }
+});
+
+// Log de debug para verificar arquivos
+console.log('Verificando arquivos na pasta de galeria...');
+try {
+  const galleryDir = path.join(__dirname, '../uploads/gallery');
+  if (fs.existsSync(galleryDir)) {
+    const files = fs.readdirSync(galleryDir);
+    console.log(`Encontrados ${files.length} arquivos na pasta da galeria:`);
+    files.forEach((file: string) => console.log(`- ${file}`));
+  } else {
+    console.log('Pasta da galeria não existe!');
+  }
+} catch (err) {
+  console.error('Erro ao verificar pasta da galeria:', err);
+}
 
 // Log para verificar o caminho absoluto da pasta de uploads
 console.log(`🖼️ Servindo arquivos estáticos de: ${path.join(__dirname, '../uploads')}`);

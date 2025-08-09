@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Instagram, Eye, ThumbsUp } from 'lucide-react';
 import { galleryAPI } from '../../services/api';
+import { createImageFallbackHandler } from '../../utils/imageUtils';
 import './styles.css';
 
 // Interface adaptada para compatibilidade com a API
@@ -9,6 +10,7 @@ interface GalleryPhoto {
   title: string;
   category: string;
   imageUrl: string;
+  normalizedImageUrl?: string; // URL normalizada para exibição
   likes: number;
   isActive: boolean;
   createdAt: string;
@@ -47,18 +49,37 @@ const GallerySection: React.FC = () => {
         setIsLoading(true);
         const photos = await galleryAPI.getAll();
         
-        // Converter o formato da API para o formato usado pelo componente
-        const formattedPhotos = photos.map(photo => ({
-          _id: photo._id,
-          title: photo.title,
-          category: photo.category,
-          imageUrl: photo.imageUrl,
-          likes: photo.likes,
-          isActive: photo.isActive,
-          createdAt: photo.createdAt,
-          updatedAt: photo.updatedAt
-        }));
+        console.log('Fotos recebidas da API:', photos);
         
+        // Função para normalizar URLs de imagens da galeria
+        const normalizeGalleryImageUrl = (imageUrl: string) => {
+          // Se já for uma URL completa, retorna como está
+          if (imageUrl.startsWith('http')) {
+            return imageUrl;
+          }
+          
+          // Caso contrário, constrói a URL completa
+          const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+          const baseUrl = apiBaseUrl.replace(/\/api\/?$/, '');
+          return `${baseUrl}${imageUrl}`;
+        };
+        
+        // Converter o formato da API para o formato usado pelo componente
+        const formattedPhotos = photos.map(photo => {
+          return {
+            _id: photo._id,
+            title: photo.title,
+            category: photo.category,
+            imageUrl: photo.imageUrl, // Manter o URL original
+            normalizedImageUrl: normalizeGalleryImageUrl(photo.imageUrl), // URL normalizada
+            likes: photo.likes,
+            isActive: photo.isActive,
+            createdAt: photo.createdAt,
+            updatedAt: photo.updatedAt
+          };
+        });
+        
+        console.log('Fotos formatadas para exibição:', formattedPhotos);
         setGalleryData(formattedPhotos);
         setIsLoading(false);
       } catch (error) {
@@ -149,6 +170,15 @@ const GallerySection: React.FC = () => {
 
   // Funções para o modal
   const openModal = (photo: GalleryPhoto) => {
+    // Garantir que a imagem tenha uma URL normalizada
+    if (!photo.normalizedImageUrl) {
+      const normalizedUrl = photo.imageUrl.startsWith('http')
+        ? photo.imageUrl
+        : `${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api\/?$/, '')}${photo.imageUrl}`;
+      
+      photo = { ...photo, normalizedImageUrl: normalizedUrl };
+    }
+    
     setModalImage(photo);
     setIsModalOpen(true);
     document.body.style.overflow = 'hidden';
@@ -242,11 +272,13 @@ const GallerySection: React.FC = () => {
                 <div className="gallery-item gallery-animate" key={photo._id}>
                   <div className="gallery-image-wrapper">
                     <img 
-                      src={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${photo.imageUrl}`} 
+                      src={photo.normalizedImageUrl || photo.imageUrl}
                       alt={photo.title} 
                       className="gallery-image"
                       onClick={() => openModal(photo)}
                       loading="lazy"
+                      crossOrigin="anonymous"
+                      {...createImageFallbackHandler(photo.imageUrl, "https://placehold.co/600x800/1A1A1A/FFD700?text=Imagem+Indisponível")}
                     />
                     <div className="gallery-overlay">
                       <h3>{photo.title}</h3>
@@ -326,7 +358,13 @@ const GallerySection: React.FC = () => {
         <div className="gallery-modal" onClick={closeModal}>
           <div className="gallery-modal-content" onClick={(e) => e.stopPropagation()}>
             <button className="gallery-modal-close" onClick={closeModal}>×</button>
-            <img src={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${modalImage.imageUrl}`} alt={modalImage.title} className="gallery-modal-image" />
+            <img 
+              src={modalImage.normalizedImageUrl || modalImage.imageUrl}
+              alt={modalImage.title} 
+              className="gallery-modal-image"
+              crossOrigin="anonymous"
+              {...createImageFallbackHandler(modalImage.imageUrl, "https://placehold.co/600x800/1A1A1A/FFD700?text=Imagem+Indisponível")}
+            />
             <div className="gallery-modal-info">
               <h3>{modalImage.title}</h3>
               <p>Categoria: {categories.find(cat => cat.id === modalImage.category)?.label}</p>

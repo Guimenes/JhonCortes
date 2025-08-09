@@ -115,6 +115,9 @@ export const createGalleryPhoto = async (req: Request, res: Response) => {
       isActive: true,
     });
     
+    // Garantir que o caminho da imagem esteja correto e acessível
+    console.log('URL da imagem salva:', newPhoto.imageUrl);
+    
     await newPhoto.save();
     
     return res.status(201).json({

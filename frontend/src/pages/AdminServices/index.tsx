@@ -476,7 +476,7 @@ const AdminServices: React.FC = () => {
                       <img 
                         src={service.normalizedImageUrl || service.image}
                         alt={service.name} 
-                        className="service-image" 
+                        className="service-image"
                         {...createImageFallbackHandler(service.image, 'https://placehold.co/600x400/1A1A1A/FFF?text=Sem+Imagem')}
                       />
                       <div className="service-image-overlay">

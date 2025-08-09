@@ -366,7 +366,7 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ service, onSubmit, onClose })
                     <img 
                       src={previewUrl} 
                       alt="Prévia da imagem" 
-                      className="image-preview" 
+                      className="image-preview"
                       {...createImageFallbackHandler(previewUrl)}
                     />
                     <button 
