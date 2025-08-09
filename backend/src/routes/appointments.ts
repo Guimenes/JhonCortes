@@ -60,6 +60,13 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
     const endMinute = totalEndMinutes % 60;
     const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
 
+    // Check if appointment datetime is in the past
+    const now = new Date();
+    const appointmentDateTime = new Date(`${date}T${startTime}:00`);
+    if (appointmentDateTime <= now) {
+      return res.status(400).json({ message: 'Não é possível agendar para uma data/hora que já passou' });
+    }
+
     // Check for conflicts
     const appointmentDate = new Date(date + 'T12:00:00');
     const existingAppointment = await Appointment.findOne({

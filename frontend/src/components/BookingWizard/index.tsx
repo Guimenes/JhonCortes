@@ -84,7 +84,24 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ onClose, onSuccess }) => 
       // Usar o ID do serviço mais demorado para buscar slots disponíveis
       const longestService = [...bookingData.services].sort((a, b) => b.duration - a.duration)[0];
       const data = await appointmentsAPI.getAvailableSlots(bookingData.date, longestService._id);
-      setAvailableSlots(data.availableSlots);
+      
+      // Se for o dia atual, filtrar horários que já passaram
+      const now = new Date();
+      const isToday = bookingData.date === now.toISOString().split('T')[0];
+      
+      let availableTimeSlots = data.availableSlots;
+      if (isToday) {
+        const currentHour = now.getHours();
+        const currentMinute = now.getMinutes();
+        
+        // Filtrar apenas horários futuros
+        availableTimeSlots = availableTimeSlots.filter(slot => {
+          const [hour, minute] = slot.split(':').map(Number);
+          return (hour > currentHour) || (hour === currentHour && minute > currentMinute);
+        });
+      }
+      
+      setAvailableSlots(availableTimeSlots);
     } catch (error) {
       showError('Erro', 'Não foi possível carregar os horários disponíveis.');
     } finally {
@@ -110,13 +127,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ onClose, onSuccess }) => 
     }
   };
   
-  const handleProceedToDateSelection = () => {
-    if (bookingData.services.length === 0) {
-      showError('Erro', 'Selecione pelo menos um serviço para continuar.');
-      return;
-    }
-    setCurrentStep(2);
-  };
+  // Removida função não utilizada handleProceedToDateSelection
 
   const handleDateSelect = (date: string) => {
     setBookingData({ ...bookingData, date, time: undefined });
