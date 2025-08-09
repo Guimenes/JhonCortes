@@ -18,7 +18,7 @@ import { useNavigate } from 'react-router-dom';
 import BookingWizard from '../../components/BookingWizard';
 import type { Appointment } from '../../types';
 import { appointmentsAPI } from '../../services/api';
-import { showSuccess, showError } from '../../utils/alerts';
+import { showSuccess, showError, showWarning, showConfirmation } from '../../utils/alerts';
 import { useAuth } from '../../hooks/useAuth';
 import './styles.css';
 
@@ -62,11 +62,38 @@ const UserBooking: React.FC = () => {
     }
   };
 
-  const handleCancelAppointment = async (appointmentId: string) => {
+  const handleCancelAppointment = async (appointmentId: string, appointmentDate: string, appointmentTime: string) => {
     try {
-      await appointmentsAPI.cancel(appointmentId);
-      showSuccess('Sucesso!', 'Agendamento cancelado com sucesso!');
-      loadData();
+      // Verificar regra de 2 horas de antecedência
+      const appointmentDateTime = new Date(`${appointmentDate.split('T')[0]}T${appointmentTime}`);
+      const now = new Date();
+      
+      // Calcular a diferença em horas
+      const diffHours = (appointmentDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+      
+      if (diffHours < 2) {
+        // Se for menos de 2 horas antes, mostrar alerta e não permitir cancelamento
+        showWarning(
+          'Cancelamento não permitido',
+          'Não é possível cancelar agendamentos com menos de 2 horas de antecedência. Você pode remarcar este horário diretamente na barbearia.',
+          true
+        );
+        return;
+      }
+
+      // Confirmar cancelamento
+      const { isConfirmed } = await showConfirmation(
+        'Cancelar agendamento?',
+        'Você está prestes a cancelar seu agendamento. Tem certeza que deseja continuar?',
+        'Sim, cancelar',
+        'Não, manter agendamento'
+      );
+
+      if (isConfirmed) {
+        await appointmentsAPI.cancel(appointmentId);
+        showSuccess('Sucesso!', 'Agendamento cancelado com sucesso!');
+        loadData();
+      }
     } catch (error: any) {
       showError('Erro', error.response?.data?.message || 'Não foi possível cancelar o agendamento.');
     }
@@ -356,7 +383,7 @@ const UserBooking: React.FC = () => {
                     <div className="luxury-card-actions">
                       <button
                         className="luxury-cancel-btn"
-                        onClick={() => handleCancelAppointment(appointment._id)}
+                        onClick={() => handleCancelAppointment(appointment._id, appointment.date, appointment.startTime)}
                       >
                         <XCircle size={16} />
                         <span>Cancelar Agendamento</span>

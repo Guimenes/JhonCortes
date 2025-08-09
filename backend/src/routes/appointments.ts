@@ -143,15 +143,45 @@ router.delete('/:id', authenticateToken, async (req: AuthRequest, res) => {
       query.user = userId;
     }
 
+    // Primeiro buscar o agendamento para verificações
+    const appointmentToCancel = await Appointment.findOne(query)
+      .populate('service', 'name duration');
+
+    if (!appointmentToCancel) {
+      return res.status(404).json({ message: 'Agendamento não encontrado' });
+    }
+
+    // Verificar se o agendamento já foi cancelado
+    if (appointmentToCancel.status === 'cancelado') {
+      return res.status(400).json({ message: 'Este agendamento já foi cancelado' });
+    }
+
+    // Verificar se o agendamento já foi concluído
+    if (appointmentToCancel.status === 'concluido') {
+      return res.status(400).json({ message: 'Não é possível cancelar um agendamento que já foi concluído' });
+    }
+
+    // Verificar regra de 2 horas de antecedência (apenas para não-admins)
+    if (!isAdmin) {
+      const appointmentDateTime = new Date(`${appointmentToCancel.date.toISOString().split('T')[0]}T${appointmentToCancel.startTime}`);
+      const now = new Date();
+      
+      // Calcular a diferença em horas
+      const diffHours = (appointmentDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+      
+      if (diffHours < 2) {
+        return res.status(400).json({ 
+          message: 'Não é possível cancelar agendamentos com menos de 2 horas de antecedência. Entre em contato com a barbearia.'
+        });
+      }
+    }
+
+    // Fazer o cancelamento
     const appointment = await Appointment.findOneAndUpdate(
       query,
       { status: 'cancelado' },
       { new: true }
     );
-
-    if (!appointment) {
-      return res.status(404).json({ message: 'Agendamento não encontrado' });
-    }
 
     res.json({
       message: 'Agendamento cancelado com sucesso',
@@ -160,6 +190,132 @@ router.delete('/:id', authenticateToken, async (req: AuthRequest, res) => {
   } catch (error: any) {
     res.status(400).json({ 
       message: 'Erro ao cancelar agendamento',
+      error: error.message 
+    });
+  }
+});
+
+// Cancel appointment via PATCH (compatibilidade com app móvel)
+router.patch('/:id/cancel', authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const userId = req.user?._id;
+    const isAdmin = req.user?.role === 'admin';
+
+    const query: any = { _id: id };
+    if (!isAdmin) {
+      query.user = userId;
+    }
+
+    // Primeiro buscar o agendamento para verificações
+    const appointmentToCancel = await Appointment.findOne(query)
+      .populate('service', 'name duration');
+
+    if (!appointmentToCancel) {
+      return res.status(404).json({ message: 'Agendamento não encontrado' });
+    }
+
+    // Verificar se o agendamento já foi cancelado
+    if (appointmentToCancel.status === 'cancelado') {
+      return res.status(400).json({ message: 'Este agendamento já foi cancelado' });
+    }
+
+    // Verificar se o agendamento já foi concluído
+    if (appointmentToCancel.status === 'concluido') {
+      return res.status(400).json({ message: 'Não é possível cancelar um agendamento que já foi concluído' });
+    }
+
+    // Verificar regra de 2 horas de antecedência (apenas para não-admins)
+    if (!isAdmin) {
+      const appointmentDateTime = new Date(`${appointmentToCancel.date.toISOString().split('T')[0]}T${appointmentToCancel.startTime}`);
+      const now = new Date();
+      
+      // Calcular a diferença em horas
+      const diffHours = (appointmentDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+      
+      if (diffHours < 2) {
+        return res.status(400).json({ 
+          message: 'Não é possível cancelar agendamentos com menos de 2 horas de antecedência. Entre em contato com a barbearia.'
+        });
+      }
+    }
+
+    const updateData: any = { status: 'cancelado' };
+    if (reason) {
+      updateData.notes = appointmentToCancel.notes 
+        ? `${appointmentToCancel.notes}\n\nMotivo do cancelamento: ${reason}`
+        : `Motivo do cancelamento: ${reason}`;
+    }
+
+    // Fazer o cancelamento
+    const appointment = await Appointment.findOneAndUpdate(
+      query,
+      updateData,
+      { new: true }
+    );
+
+    res.json({
+      message: 'Agendamento cancelado com sucesso',
+      appointment
+    });
+  } catch (error: any) {
+    res.status(400).json({ 
+      message: 'Erro ao cancelar agendamento',
+      error: error.message 
+    });
+  }
+});
+
+// Confirm appointment (compatibilidade com app móvel)
+router.patch('/:id/confirm', authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+
+    const appointment = await Appointment.findByIdAndUpdate(
+      id,
+      { status: 'confirmado' },
+      { new: true, runValidators: true }
+    ).populate('service', 'name duration price');
+
+    if (!appointment) {
+      return res.status(404).json({ message: 'Agendamento não encontrado' });
+    }
+
+    res.json({
+      message: 'Agendamento confirmado com sucesso',
+      appointment
+    });
+  } catch (error: any) {
+    res.status(400).json({ 
+      message: 'Erro ao confirmar agendamento',
+      error: error.message 
+    });
+  }
+});
+
+// Complete appointment (compatibilidade com app móvel)
+router.patch('/:id/complete', authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+
+    const appointment = await Appointment.findByIdAndUpdate(
+      id,
+      { status: 'concluido' },
+      { new: true, runValidators: true }
+    ).populate('service', 'name duration price');
+
+    if (!appointment) {
+      return res.status(404).json({ message: 'Agendamento não encontrado' });
+    }
+
+    res.json({
+      message: 'Agendamento concluído com sucesso',
+      appointment
+    });
+  } catch (error: any) {
+    res.status(400).json({ 
+      message: 'Erro ao concluir agendamento',
       error: error.message 
     });
   }

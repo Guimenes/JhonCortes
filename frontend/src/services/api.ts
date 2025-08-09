@@ -156,9 +156,16 @@ export const appointmentsAPI = {
     return response.data;
   },
 
-  cancel: async (id: string): Promise<{ message: string }> => {
-    const response = await api.delete(`/appointments/${id}`);
-    return response.data;
+  cancel: async (id: string, reason?: string): Promise<{ message: string; appointment: Appointment }> => {
+    if (reason) {
+      // Se tiver motivo, usar a rota PATCH que agora suporta motivos
+      const response = await api.patch(`/appointments/${id}/cancel`, { reason });
+      return response.data;
+    } else {
+      // Manter compatibilidade com o código existente
+      const response = await api.delete(`/appointments/${id}`);
+      return response.data;
+    }
   },
 
   getAvailableSlots: async (date: string, serviceId?: string): Promise<AvailableSlots> => {
