@@ -15,7 +15,7 @@ interface BookingWizardProps {
 type Step = 1 | 2 | 3 | 4 | 5;
 
 interface BookingData {
-  service?: Service;
+  services: Service[];
   date?: string;
   time?: string;
   notes?: string;
@@ -27,7 +27,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ onClose, onSuccess }) => 
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(false);
-  const [bookingData, setBookingData] = useState<BookingData>({});
+  const [bookingData, setBookingData] = useState<BookingData>({ services: [] });
 
   const steps = [
     { number: 1, title: 'Escolha o Serviço', icon: Scissors },
@@ -43,10 +43,10 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ onClose, onSuccess }) => 
   }, []);
 
   useEffect(() => {
-    if (bookingData.date && bookingData.service) {
+    if (bookingData.date && bookingData.services.length > 0) {
       loadAvailableSlots();
     }
-  }, [bookingData.date, bookingData.service]);
+  }, [bookingData.date, bookingData.services]);
 
   const loadServices = async () => {
     try {
@@ -77,11 +77,13 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ onClose, onSuccess }) => 
   };
 
   const loadAvailableSlots = async () => {
-    if (!bookingData.date || !bookingData.service) return;
+    if (!bookingData.date || bookingData.services.length === 0) return;
     
     try {
       setLoading(true);
-      const data = await appointmentsAPI.getAvailableSlots(bookingData.date, bookingData.service._id);
+      // Usar o ID do serviço mais demorado para buscar slots disponíveis
+      const longestService = [...bookingData.services].sort((a, b) => b.duration - a.duration)[0];
+      const data = await appointmentsAPI.getAvailableSlots(bookingData.date, longestService._id);
       setAvailableSlots(data.availableSlots);
     } catch (error) {
       showError('Erro', 'Não foi possível carregar os horários disponíveis.');
@@ -91,7 +93,28 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ onClose, onSuccess }) => 
   };
 
   const handleServiceSelect = (service: Service) => {
-    setBookingData({ ...bookingData, service });
+    const isAlreadySelected = bookingData.services.some(s => s._id === service._id);
+    
+    if (isAlreadySelected) {
+      // Se o serviço já está selecionado, remova-o
+      setBookingData({
+        ...bookingData,
+        services: bookingData.services.filter(s => s._id !== service._id)
+      });
+    } else {
+      // Se o serviço não está selecionado, adicione-o
+      setBookingData({
+        ...bookingData,
+        services: [...bookingData.services, service]
+      });
+    }
+  };
+  
+  const handleProceedToDateSelection = () => {
+    if (bookingData.services.length === 0) {
+      showError('Erro', 'Selecione pelo menos um serviço para continuar.');
+      return;
+    }
     setCurrentStep(2);
   };
 
@@ -110,22 +133,27 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ onClose, onSuccess }) => 
   };
 
   const handleConfirmBooking = async () => {
-    if (!bookingData.service || !bookingData.date || !bookingData.time) {
+    if (bookingData.services.length === 0 || !bookingData.date || !bookingData.time) {
       showError('Erro', 'Dados incompletos para o agendamento.');
       return;
     }
 
     try {
       setLoading(true);
-      const appointmentData: CreateAppointmentData = {
-        serviceId: bookingData.service._id,
-        date: bookingData.date,
-        startTime: bookingData.time,
-        notes: bookingData.notes
-      };
+      // Para cada serviço selecionado, crie um agendamento
+      const promises = bookingData.services.map(async (service) => {
+        const appointmentData: CreateAppointmentData = {
+          serviceId: service._id,
+          date: bookingData.date!,
+          startTime: bookingData.time!,
+          notes: bookingData.notes
+        };
+        
+        return await appointmentsAPI.create(appointmentData);
+      });
 
-      await appointmentsAPI.create(appointmentData);
-      showSuccess('Sucesso!', 'Agendamento realizado com sucesso!');
+      await Promise.all(promises);
+      showSuccess('Sucesso!', 'Agendamentos realizados com sucesso!');
       onSuccess?.();
       onClose();
     } catch (error: any) {
@@ -169,7 +197,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ onClose, onSuccess }) => 
 
   const canGoNext = () => {
     switch (currentStep) {
-      case 1: return !!bookingData.service;
+      case 1: return bookingData.services.length > 0;
       case 2: return !!bookingData.date;
       case 3: return !!bookingData.time;
       case 4: return true;
@@ -192,35 +220,48 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ onClose, onSuccess }) => 
                 <p>Carregando serviços...</p>
               </div>
             ) : (
-              <div className="services-grid">
-                {services.map(service => (
-                  <div
-                    key={service._id}
-                    className={`service-card ${bookingData.service?._id === service._id ? 'selected' : ''}`}
-                    onClick={() => handleServiceSelect(service)}
-                  >
-                    {service.image && (
-                      <div className="service-image">
-                        <img 
-                          src={service.normalizedImageUrl || service.image} 
-                          alt={service.name}
-                          {...createImageFallbackHandler(service.image)}
-                        />
-                      </div>
-                    )}
-                    <div className="service-info">
-                      <h4>{service.name}</h4>
-                      <p className="service-description">{service.description}</p>
-                      <div className="service-details">
-                        <span className="duration">
-                          <Clock size={16} />
-                          {service.duration} min
-                        </span>
-                        <span className="price">{formatPrice(service.price)}</span>
+              <div>
+                <div className="services-grid">
+                  {services.map(service => (
+                    <div
+                      key={service._id}
+                      className={`service-card ${bookingData.services.some(s => s._id === service._id) ? 'selected' : ''}`}
+                      onClick={() => handleServiceSelect(service)}
+                    >
+                      {service.image && (
+                        <div className="service-image">
+                          <img 
+                            src={service.normalizedImageUrl || service.image} 
+                            alt={service.name}
+                            {...createImageFallbackHandler(service.image)}
+                          />
+                        </div>
+                      )}
+                      <div className="service-info">
+                        <h4>{service.name}</h4>
+                        <p className="service-description">{service.description}</p>
+                        <div className="service-details">
+                          <span className="duration">
+                            <Clock size={16} />
+                            {service.duration} min
+                          </span>
+                          <span className="price">{formatPrice(service.price)}</span>
+                        </div>
                       </div>
                     </div>
+                  ))}
+                </div>
+                
+                {bookingData.services.length > 0 && (
+                  <div className="services-summary">
+                    <div className="selected-services-count">
+                      <strong>{bookingData.services.length}</strong> {bookingData.services.length === 1 ? 'serviço selecionado' : 'serviços selecionados'}
+                    </div>
+                    <div className="services-total-price">
+                      Total: <strong>{formatPrice(bookingData.services.reduce((acc, service) => acc + service.price, 0))}</strong>
+                    </div>
                   </div>
-                ))}
+                )}
               </div>
             )}
           </div>
@@ -277,19 +318,19 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ onClose, onSuccess }) => 
               <p>Selecione um horário disponível para {formatDate(bookingData.date!)}</p>
             </div>
 
-            {bookingData.service && (
+            {bookingData.services.length > 0 && (
               <div className="selected-service-info">
-                <h4>Serviço selecionado:</h4>
-                <div className="service-details">
-                  <span className="service-name">{bookingData.service.name}</span>
-                  <span className="service-duration">
-                    <Clock size={16} />
-                    {bookingData.service.duration} minutos
-                  </span>
-                  <span className="service-price">
-                    {formatPrice(bookingData.service.price)}
-                  </span>
-                </div>
+                <h4>{bookingData.services.length > 1 ? 'Serviços selecionados:' : 'Serviço selecionado:'}</h4>
+                {bookingData.services.map((service, index) => (
+                  <div key={service._id} className="service-details" style={{marginBottom: index < bookingData.services.length - 1 ? '16px' : '0'}}>
+                    <span className="service-name">{service.name}</span>
+                    <span className="service-duration">
+                      <Clock size={16} />
+                      {service.duration} minutos
+                    </span>
+                    
+                  </div>
+                ))}
               </div>
             )}
 
@@ -316,11 +357,11 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ onClose, onSuccess }) => 
                 <div className="time-info">
                   <div className="info-item">
                     <Clock size={16} />
-                    <span>Duração: {bookingData.service?.duration || 30} minutos</span>
+                    <span>Duração Total: {bookingData.services.reduce((acc, service) => acc + service.duration, 0)} minutos</span>
                   </div>
                   <div className="info-item">
                     <span className="price-highlight">
-                      Preço: {formatPrice(bookingData.service?.price || 0)}
+                      Preço Total: {formatPrice(bookingData.services.reduce((acc, service) => acc + service.price, 0))}
                     </span>
                   </div>
                 </div>
@@ -378,19 +419,24 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ onClose, onSuccess }) => 
             </div>
             <div className="confirmation-details">
               <div className="detail-group">
-                <h4>Serviço</h4>
-                <div className="detail-card">
-                  <div className="detail-info">
-                    <strong>{bookingData.service?.name}</strong>
-                    <p>{bookingData.service?.description}</p>
-                    <div className="detail-meta">
-                      <span>
-                        <Clock size={16} />
-                        {bookingData.service?.duration} minutos
-                      </span>
+                <h4>{bookingData.services.length > 1 ? 'Serviços' : 'Serviço'}</h4>
+                {bookingData.services.map((service) => (
+                  <div key={service._id} className="detail-card" style={{marginBottom: '12px'}}>
+                    <div className="detail-info">
+                      <strong>{service.name}</strong>
+                      <p>{service.description}</p>
+                      <div className="detail-meta">
+                        <span>
+                          <Clock size={16} />
+                          {service.duration} minutos
+                        </span>
+                        <span className="pricers">
+                          {formatPrice(service.price)}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ))}
               </div>
 
               <div className="detail-group">
@@ -420,7 +466,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ onClose, onSuccess }) => 
               <div className="total-section">
                 <div className="total-line">
                   <span>Total:</span>
-                  <strong>{formatPrice(bookingData.service?.price || 0)}</strong>
+                  <strong>{formatPrice(bookingData.services.reduce((acc, service) => acc + service.price, 0))}</strong>
                 </div>
               </div>
             </div>
