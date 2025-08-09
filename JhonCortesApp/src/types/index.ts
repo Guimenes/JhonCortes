@@ -67,7 +67,7 @@ export interface LoginCredentials {
 }
 
 export interface LoginRequest {
-  identifier: string;
+  email: string;
   password: string;
 }
 
