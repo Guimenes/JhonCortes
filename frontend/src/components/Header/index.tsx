@@ -106,7 +106,7 @@ const Header: React.FC<HeaderProps> = ({ onBookingClick }) => {
     return createPortal(
       <>
         <div className="mobile-menu-overlay" onClick={() => setShowUserMenu(false)}></div>
-        <div className="mobile-user-dropdown-menu">
+        <div className="mobile-user-dropdown-menu" ref={mobileUserMenuRef}>
           <button className="close-menu-btn" onClick={() => setShowUserMenu(false)}>
             <X size={20} />
           </button>
@@ -125,12 +125,16 @@ const Header: React.FC<HeaderProps> = ({ onBookingClick }) => {
             <Calendar size={16} />
             Meus Agendamentos
           </Link>
-          <button onClick={() => {
-            logout();
-            setShowUserMenu(false);
-            setIsMenuOpen(false);
-            navigate('/');
-          }} className="logout-button">
+          <button 
+            onClick={() => {
+              logout();
+              setShowUserMenu(false);
+              setIsMenuOpen(false);
+              navigate('/');
+            }} 
+            className="logout-button"
+            type="button"
+          >
             <LogOut size={16} />
             Sair
           </button>

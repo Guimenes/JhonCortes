@@ -1,5 +1,4 @@
 import React, { useState, memo } from 'react';
-import UserProfile from '../UserProfile';
 import type { User } from '../../types';
 
 interface UserAvatarProps {
@@ -13,7 +12,7 @@ const UserAvatar: React.FC<UserAvatarProps> = memo(({
   disableProfileModal = false,
   onClick
 }) => {
-  const [showProfile, setShowProfile] = useState(false);
+  const [ ] = useState(false);
 
   const getInitials = (name: string) => {
     return name
@@ -30,7 +29,6 @@ const UserAvatar: React.FC<UserAvatarProps> = memo(({
     if (onClick) {
       onClick();
     } else if (!disableProfileModal) {
-      setShowProfile(true);
     }
   };
 
@@ -50,10 +48,6 @@ const UserAvatar: React.FC<UserAvatarProps> = memo(({
           )}
         </div>
       </div>
-
-      {!disableProfileModal && showProfile && (
-        <UserProfile onClose={() => setShowProfile(false)} />
-      )}
     </>
   );
 }, (prevProps, nextProps) => {

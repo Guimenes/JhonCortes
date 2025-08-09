@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { authAPI } from '../../services/api';
 import type { User as UserType } from '../../types';
-import { showError, showSuccess, showWarning, showUploadProgress, updateUploadProgress, closeLoading } from '../../utils/alerts';
+import { showError, showSuccess, showWarning } from '../../utils/alerts';
 import './styles.css';
 
 interface EditProfileProps {
