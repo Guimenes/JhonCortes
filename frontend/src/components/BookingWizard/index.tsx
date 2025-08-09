@@ -3,6 +3,7 @@ import { Calendar, Clock, CheckCircle, ArrowLeft, ArrowRight, Scissors, Calendar
 import type { Service, CreateAppointmentData, Schedule } from '../../types';
 import { servicesAPI, appointmentsAPI, schedulesAPI } from '../../services/api';
 import { showSuccess, showError, showWarning, showConfirmation } from '../../utils/alerts';
+import { normalizeImageUrl, createImageFallbackHandler } from '../../utils/imageUtils';
 import CustomCalendar from '../CustomCalendar';
 import './styles.css';
 
@@ -51,7 +52,14 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ onClose, onSuccess }) => 
     try {
       setLoading(true);
       const data = await servicesAPI.getAll();
-      setServices(data.filter(service => service.isActive));
+      // Normalizar as URLs das imagens dos serviços
+      const normalizedServices = data
+        .filter(service => service.isActive)
+        .map(service => ({
+          ...service,
+          normalizedImageUrl: service.image ? normalizeImageUrl(service.image) : undefined
+        }));
+      setServices(normalizedServices);
     } catch (error) {
       showError('Erro', 'Não foi possível carregar os serviços.');
     } finally {
@@ -193,7 +201,11 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ onClose, onSuccess }) => 
                   >
                     {service.image && (
                       <div className="service-image">
-                        <img src={service.image} alt={service.name} />
+                        <img 
+                          src={service.normalizedImageUrl || service.image} 
+                          alt={service.name}
+                          {...createImageFallbackHandler(service.image)}
+                        />
                       </div>
                     )}
                     <div className="service-info">

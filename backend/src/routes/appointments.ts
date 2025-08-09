@@ -331,9 +331,9 @@ router.get('/available-slots/:date', async (req, res) => {
     const appointmentDate = new Date(date + 'T12:00:00');
     const dayOfWeek = appointmentDate.getDay();
 
-    // Buscar horário de funcionamento para o dia da semana
-    const schedule = await Schedule.findOne({ dayOfWeek, isActive: true });
-    if (!schedule) {
+    // Buscar TODOS os horários de funcionamento para o dia da semana
+    const schedules = await Schedule.find({ dayOfWeek, isActive: true }).sort({ startTime: 1 });
+    if (schedules.length === 0) {
       console.log(`No schedule found for dayOfWeek: ${dayOfWeek}`);
       return res.json({ availableSlots: [] });
     }
@@ -347,7 +347,7 @@ router.get('/available-slots/:date', async (req, res) => {
       }
     }
 
-    console.log(`Schedule found: ${schedule.startTime} - ${schedule.endTime}, Service duration: ${serviceDuration} minutes`);
+    console.log(`Found ${schedules.length} schedules, Service duration: ${serviceDuration} minutes`);
 
     // Buscar indisponibilidades para a data específica
     const searchDate = new Date(date + 'T12:00:00');
@@ -374,53 +374,59 @@ router.get('/available-slots/:date', async (req, res) => {
 
     console.log(`Found ${appointments.length} existing appointments`);
 
-    // Gerar slots disponíveis baseado na duração do serviço
+    // Gerar slots disponíveis para cada horário de funcionamento
     const slots = [];
-    const startTime = new Date(`1970-01-01T${schedule.startTime}:00`);
-    const endTime = new Date(`1970-01-01T${schedule.endTime}:00`);
     
-    console.log(`Generating slots from ${schedule.startTime} to ${schedule.endTime} with ${serviceDuration} minute intervals`);
-    
-    let currentTime = new Date(startTime);
-    
-    // Loop deve parar quando o slot + duração do serviço ultrapassar o horário de fim
-    while (currentTime < endTime) {
-      const timeString = currentTime.toTimeString().slice(0, 5);
+    // Processar cada horário de funcionamento
+    for (const schedule of schedules) {
+      console.log(`Processing schedule: ${schedule.startTime} - ${schedule.endTime}`);
       
-      // Calcular o fim do slot baseado na duração do serviço
-      const slotEnd = new Date(currentTime.getTime() + serviceDuration * 60000);
-      const slotEndString = slotEnd.toTimeString().slice(0, 5);
+      const startTime = new Date(`1970-01-01T${schedule.startTime}:00`);
+      const endTime = new Date(`1970-01-01T${schedule.endTime}:00`);
       
-      // Se o slot + duração ultrapassa o horário de funcionamento, parar
-      if (slotEnd > endTime) {
-        console.log(`Slot ${timeString}-${slotEndString} exceeds end time ${schedule.endTime}, stopping`);
-        break;
+      console.log(`Generating slots from ${schedule.startTime} to ${schedule.endTime} with ${serviceDuration} minute intervals`);
+      
+      let currentTime = new Date(startTime);
+      
+      // Loop deve parar quando o slot + duração do serviço ultrapassar o horário de fim
+      while (currentTime < endTime) {
+        const timeString = currentTime.toTimeString().slice(0, 5);
+        
+        // Calcular o fim do slot baseado na duração do serviço
+        const slotEnd = new Date(currentTime.getTime() + serviceDuration * 60000);
+        const slotEndString = slotEnd.toTimeString().slice(0, 5);
+        
+        // Se o slot + duração ultrapassa o horário de funcionamento, parar
+        if (slotEnd > endTime) {
+          console.log(`Slot ${timeString}-${slotEndString} exceeds end time ${schedule.endTime}, stopping`);
+          break;
+        }
+      
+        // Verificar se todo o período do serviço não está em indisponibilidade
+        const isUnavailable = unavailabilities.some((unavail: any) => {
+          const unavailStart = new Date(`1970-01-01T${unavail.startTime}:00`);
+          const unavailEnd = new Date(`1970-01-01T${unavail.endTime}:00`);
+          // Se qualquer parte do slot conflita com indisponibilidade
+          return !(slotEnd <= unavailStart || currentTime >= unavailEnd);
+        });
+
+        // Verificar se não há conflito com agendamentos existentes
+        const hasAppointmentConflict = appointments.some(appointment => {
+          const appointmentStart = new Date(`1970-01-01T${appointment.startTime}:00`);
+          const appointmentEnd = new Date(`1970-01-01T${appointment.endTime}:00`);
+          // Se qualquer parte do slot conflita com agendamento existente
+          return !(slotEnd <= appointmentStart || currentTime >= appointmentEnd);
+        });
+
+        console.log(`Checking slot ${timeString}-${slotEndString}: unavailable=${isUnavailable}, conflict=${hasAppointmentConflict}`);
+
+        if (!isUnavailable && !hasAppointmentConflict) {
+          slots.push(timeString);
+        }
+
+        // Avançar em intervalos menores (15 minutos) para dar mais opções de horário
+        currentTime.setMinutes(currentTime.getMinutes() + 15);
       }
-      
-      // Verificar se todo o período do serviço não está em indisponibilidade
-      const isUnavailable = unavailabilities.some((unavail: any) => {
-        const unavailStart = new Date(`1970-01-01T${unavail.startTime}:00`);
-        const unavailEnd = new Date(`1970-01-01T${unavail.endTime}:00`);
-        // Se qualquer parte do slot conflita com indisponibilidade
-        return !(slotEnd <= unavailStart || currentTime >= unavailEnd);
-      });
-
-      // Verificar se não há conflito com agendamentos existentes
-      const hasAppointmentConflict = appointments.some(appointment => {
-        const appointmentStart = new Date(`1970-01-01T${appointment.startTime}:00`);
-        const appointmentEnd = new Date(`1970-01-01T${appointment.endTime}:00`);
-        // Se qualquer parte do slot conflita com agendamento existente
-        return !(slotEnd <= appointmentStart || currentTime >= appointmentEnd);
-      });
-
-      console.log(`Checking slot ${timeString}-${slotEndString}: unavailable=${isUnavailable}, conflict=${hasAppointmentConflict}`);
-
-      if (!isUnavailable && !hasAppointmentConflict) {
-        slots.push(timeString);
-      }
-
-      // Avançar em intervalos menores (15 minutos) para dar mais opções de horário
-      currentTime.setMinutes(currentTime.getMinutes() + 15);
     }
 
     console.log(`Generated ${slots.length} available slots:`, slots);
@@ -441,8 +447,8 @@ router.get('/check-date/:date', async (req, res) => {
     const dayOfWeek = appointmentDate.getDay();
 
     // Check if it's a working day
-    const schedule = await Schedule.findOne({ dayOfWeek, isActive: true });
-    const isWorkingDay = !!schedule;
+    const schedules = await Schedule.find({ dayOfWeek, isActive: true });
+    const isWorkingDay = schedules.length > 0;
 
     // Check for unavailabilities
     const startOfDay = new Date(appointmentDate);
@@ -462,10 +468,14 @@ router.get('/check-date/:date', async (req, res) => {
     
     // Check if the entire day is blocked by unavailabilities
     let isCompletelyBlocked = false;
-    if (schedule && hasUnavailability) {
-      const scheduleStart = new Date(`1970-01-01T${schedule.startTime}:00`);
-      const scheduleEnd = new Date(`1970-01-01T${schedule.endTime}:00`);
-      const scheduleDuration = scheduleEnd.getTime() - scheduleStart.getTime();
+    if (schedules.length > 0 && hasUnavailability) {
+      // Calcular a duração total de todos os horários de funcionamento
+      let totalWorkingDuration = 0;
+      for (const schedule of schedules) {
+        const scheduleStart = new Date(`1970-01-01T${schedule.startTime}:00`);
+        const scheduleEnd = new Date(`1970-01-01T${schedule.endTime}:00`);
+        totalWorkingDuration += scheduleEnd.getTime() - scheduleStart.getTime();
+      }
       
       // Calculate total unavailable time, considering overlaps
       const sortedUnavailabilities = unavailabilities
@@ -489,52 +499,55 @@ router.get('/check-date/:date', async (req, res) => {
       }
       
       // Consider completely blocked if 90% or more of the day is unavailable
-      isCompletelyBlocked = totalUnavailableDuration >= (scheduleDuration * 0.9);
+      isCompletelyBlocked = totalUnavailableDuration >= (totalWorkingDuration * 0.9);
     }
 
     // Check if all time slots are occupied by appointments
     let hasAvailableSlots = true;
-    if (schedule && !isCompletelyBlocked) {
+    if (schedules.length > 0 && !isCompletelyBlocked) {
       // Get all existing appointments for the date
       const appointments = await Appointment.find({
         date: appointmentDate,
         status: { $in: ['pendente', 'confirmado'] }
       }).select('startTime endTime');
 
-      // Generate slots with a short duration (15 minutes) to check availability
+      // Gerar slots para cada período de funcionamento
       const slots = [];
-      const startTime = new Date(`1970-01-01T${schedule.startTime}:00`);
-      const endTime = new Date(`1970-01-01T${schedule.endTime}:00`);
       const slotDuration = 15; // Use 15 minutes as minimum slot duration
       
-      let currentTime = new Date(startTime);
+      for (const schedule of schedules) {
+        const startTime = new Date(`1970-01-01T${schedule.startTime}:00`);
+        const endTime = new Date(`1970-01-01T${schedule.endTime}:00`);
       
-      while (currentTime < endTime) {
-        const slotEnd = new Date(currentTime.getTime() + slotDuration * 60000);
+        let currentTime = new Date(startTime);
         
-        if (slotEnd > endTime) {
-          break;
+        while (currentTime < endTime) {
+          const slotEnd = new Date(currentTime.getTime() + slotDuration * 60000);
+          
+          if (slotEnd > endTime) {
+            break;
+          }
+          
+          // Check if this slot conflicts with unavailabilities
+          const isUnavailable = unavailabilities.some((unavail: any) => {
+            const unavailStart = new Date(`1970-01-01T${unavail.startTime}:00`);
+            const unavailEnd = new Date(`1970-01-01T${unavail.endTime}:00`);
+            return !(slotEnd <= unavailStart || currentTime >= unavailEnd);
+          });
+
+          // Check if this slot conflicts with existing appointments
+          const hasAppointmentConflict = appointments.some(appointment => {
+            const appointmentStart = new Date(`1970-01-01T${appointment.startTime}:00`);
+            const appointmentEnd = new Date(`1970-01-01T${appointment.endTime}:00`);
+            return !(slotEnd <= appointmentStart || currentTime >= appointmentEnd);
+          });
+
+          if (!isUnavailable && !hasAppointmentConflict) {
+            slots.push(currentTime.toTimeString().slice(0, 5));
+          }
+
+          currentTime.setMinutes(currentTime.getMinutes() + 15);
         }
-        
-        // Check if this slot conflicts with unavailabilities
-        const isUnavailable = unavailabilities.some((unavail: any) => {
-          const unavailStart = new Date(`1970-01-01T${unavail.startTime}:00`);
-          const unavailEnd = new Date(`1970-01-01T${unavail.endTime}:00`);
-          return !(slotEnd <= unavailStart || currentTime >= unavailEnd);
-        });
-
-        // Check if this slot conflicts with existing appointments
-        const hasAppointmentConflict = appointments.some(appointment => {
-          const appointmentStart = new Date(`1970-01-01T${appointment.startTime}:00`);
-          const appointmentEnd = new Date(`1970-01-01T${appointment.endTime}:00`);
-          return !(slotEnd <= appointmentStart || currentTime >= appointmentEnd);
-        });
-
-        if (!isUnavailable && !hasAppointmentConflict) {
-          slots.push(currentTime.toTimeString().slice(0, 5));
-        }
-
-        currentTime.setMinutes(currentTime.getMinutes() + 15);
       }
       
       hasAvailableSlots = slots.length > 0;

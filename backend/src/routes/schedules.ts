@@ -357,9 +357,9 @@ router.get('/available-slots/:date', async (req, res) => {
     const queryDate = new Date(date);
     const dayOfWeek = queryDate.getDay();
 
-    // Buscar horário de funcionamento para o dia da semana
-    const schedule = await Schedule.findOne({ dayOfWeek, isActive: true });
-    if (!schedule) {
+    // Buscar TODOS os horários de funcionamento para o dia da semana
+    const schedules = await Schedule.find({ dayOfWeek, isActive: true }).sort({ startTime: 1 });
+    if (schedules.length === 0) {
       return res.json({ availableSlots: [] });
     }
 
@@ -372,30 +372,36 @@ router.get('/available-slots/:date', async (req, res) => {
       isActive: true
     });
 
-    // Gerar slots disponíveis (a cada 30 minutos)
-    const slots = [];
-    const startTime = new Date(`1970-01-01T${schedule.startTime}:00`);
-    const endTime = new Date(`1970-01-01T${schedule.endTime}:00`);
+    // Gerar slots disponíveis para cada horário de funcionamento (a cada 30 minutos)
+    let allSlots: string[] = [];
     
-    let currentTime = new Date(startTime);
-    while (currentTime < endTime) {
-      const timeString = currentTime.toTimeString().slice(0, 5);
+    for (const schedule of schedules) {
+      const startTime = new Date(`1970-01-01T${schedule.startTime}:00`);
+      const endTime = new Date(`1970-01-01T${schedule.endTime}:00`);
       
-      // Verificar se o horário não está em uma indisponibilidade
-      const isUnavailable = unavailabilities.some(unavail => {
-        const unavailStart = new Date(`1970-01-01T${unavail.startTime}:00`);
-        const unavailEnd = new Date(`1970-01-01T${unavail.endTime}:00`);
-        return currentTime >= unavailStart && currentTime < unavailEnd;
-      });
+      let currentTime = new Date(startTime);
+      while (currentTime < endTime) {
+        const timeString = currentTime.toTimeString().slice(0, 5);
+        
+        // Verificar se o horário não está em uma indisponibilidade
+        const isUnavailable = unavailabilities.some(unavail => {
+          const unavailStart = new Date(`1970-01-01T${unavail.startTime}:00`);
+          const unavailEnd = new Date(`1970-01-01T${unavail.endTime}:00`);
+          return currentTime >= unavailStart && currentTime < unavailEnd;
+        });
 
-      if (!isUnavailable) {
-        slots.push(timeString);
+        if (!isUnavailable) {
+          allSlots.push(timeString);
+        }
+
+        currentTime.setMinutes(currentTime.getMinutes() + 30);
       }
-
-      currentTime.setMinutes(currentTime.getMinutes() + 30);
     }
 
-    res.json({ availableSlots: slots });
+    // Ordenar e remover duplicatas (caso existam sobreposições entre horários)
+    allSlots = [...new Set(allSlots)].sort();
+
+    res.json({ availableSlots: allSlots });
   } catch (error: any) {
     res.status(500).json({ 
       message: 'Erro ao buscar horários disponíveis',
