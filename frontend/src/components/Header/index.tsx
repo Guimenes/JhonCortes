@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Menu, X, Scissors, ChevronDown, Calendar, User, Home, Info, Image, Phone, Settings, 
-  LogOut } from 'lucide-react';
+  LogOut} from 'lucide-react';
 import './Header.css';
+import './auth-buttons.css';
+import './mobile-menu.css';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import './auth-buttons.css';
 import UserAvatar from '../UserAvatar';
 
 interface HeaderProps {
@@ -18,6 +20,7 @@ const Header: React.FC<HeaderProps> = ({ onBookingClick }) => {
   const { user, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const mobileUserMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const dropdownRef = useRef<HTMLLIElement>(null);
@@ -43,7 +46,8 @@ const Header: React.FC<HeaderProps> = ({ onBookingClick }) => {
         setIsAdminDropdownOpen(false);
       }
       
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node) &&
+          mobileUserMenuRef.current && !mobileUserMenuRef.current.contains(event.target as Node)) {
         setShowUserMenu(false);
       }
     };
@@ -82,7 +86,62 @@ const Header: React.FC<HeaderProps> = ({ onBookingClick }) => {
     }
   };
 
+  // Hook para verificar se é mobile
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 767);
+
+  // Detecta mudanças na largura da tela
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 767);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Portal para o overlay e menu dropdown mobile (apenas em dispositivos móveis)
+  const renderMobileMenuPortal = () => {
+    if (!showUserMenu || !isMobile) return null;
+    
+    return createPortal(
+      <>
+        <div className="mobile-menu-overlay" onClick={() => setShowUserMenu(false)}></div>
+        <div className="mobile-user-dropdown-menu">
+          <button className="close-menu-btn" onClick={() => setShowUserMenu(false)}>
+            <X size={20} />
+          </button>
+          <h3 className="mobile-menu-title">Menu do Usuário</h3>
+          <Link to="/profile" onClick={() => {
+            setShowUserMenu(false);
+            setIsMenuOpen(false);
+          }}>
+            <User size={16} />
+            Meu Perfil
+          </Link>
+          <Link to="/booking" onClick={() => {
+            setShowUserMenu(false);
+            setIsMenuOpen(false);
+          }}>
+            <Calendar size={16} />
+            Meus Agendamentos
+          </Link>
+          <button onClick={() => {
+            logout();
+            setShowUserMenu(false);
+            setIsMenuOpen(false);
+            navigate('/');
+          }} className="logout-button">
+            <LogOut size={16} />
+            Sair
+          </button>
+        </div>
+      </>,
+      document.body
+    );
+  };
+
   return (
+    <>
     <header className={`header ${headerClass}`}>
       {/* Navbar principal */}
       <nav className="navbar">
@@ -178,13 +237,14 @@ const Header: React.FC<HeaderProps> = ({ onBookingClick }) => {
               <div className="user-section">
                 <span className="user-greeting">Olá, {user?.name.split(' ')[0]}</span>
                 <div className="user-menu-container" ref={userMenuRef}>
-                  <div 
-                    className="user-avatar" 
-                    onClick={() => setShowUserMenu(!showUserMenu)}
-                  >
-                    <UserAvatar user={user!} />
+                  <div className="user-avatar">
+                    <UserAvatar 
+                      user={user!} 
+                      disableProfileModal={true}
+                      onClick={() => setShowUserMenu(!showUserMenu)}
+                    />
                   </div>
-                  {showUserMenu && (
+                  {showUserMenu && !isMobile && (
                     <div className="user-dropdown-menu">
                       <Link to="/profile" onClick={() => setShowUserMenu(false)}>
                         <User size={16} />
@@ -316,7 +376,13 @@ const Header: React.FC<HeaderProps> = ({ onBookingClick }) => {
               <li>
                 <div className="mobile-user-info">
                   <span className="mobile-user-greeting">Olá, {user?.name.split(' ')[0]}!</span>
-                  <UserAvatar user={user!} />
+                  <div className="mobile-user-menu-container" ref={mobileUserMenuRef}>
+                    <UserAvatar 
+                      user={user!} 
+                      disableProfileModal={true}
+                      onClick={() => setShowUserMenu(!showUserMenu)}
+                    />
+                  </div>
                 </div>
               </li>
             ) : (
@@ -335,6 +401,8 @@ const Header: React.FC<HeaderProps> = ({ onBookingClick }) => {
         </div>
       </nav>
     </header>
+    {renderMobileMenuPortal()}
+    </>
   );
 };
 

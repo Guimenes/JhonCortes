@@ -4,9 +4,15 @@ import type { User } from '../../types';
 
 interface UserAvatarProps {
   user: User;
+  disableProfileModal?: boolean;
+  onClick?: () => void;
 }
 
-const UserAvatar: React.FC<UserAvatarProps> = memo(({ user }) => {
+const UserAvatar: React.FC<UserAvatarProps> = memo(({ 
+  user, 
+  disableProfileModal = false,
+  onClick
+}) => {
   const [showProfile, setShowProfile] = useState(false);
 
   const getInitials = (name: string) => {
@@ -20,9 +26,17 @@ const UserAvatar: React.FC<UserAvatarProps> = memo(({ user }) => {
 
   const avatarUrl = user.avatar ? `${import.meta.env.VITE_BASE_URL || 'http://localhost:5000'}${user.avatar}` : null;
 
+  const handleClick = () => {
+    if (onClick) {
+      onClick();
+    } else if (!disableProfileModal) {
+      setShowProfile(true);
+    }
+  };
+
   return (
     <>
-      <div className="user-avatar" onClick={() => setShowProfile(true)}>
+      <div className="user-avatar" onClick={handleClick}>
         <div className="user-avatar-circle">
           {avatarUrl ? (
             <img 
@@ -37,7 +51,7 @@ const UserAvatar: React.FC<UserAvatarProps> = memo(({ user }) => {
         </div>
       </div>
 
-      {showProfile && (
+      {!disableProfileModal && showProfile && (
         <UserProfile onClose={() => setShowProfile(false)} />
       )}
     </>

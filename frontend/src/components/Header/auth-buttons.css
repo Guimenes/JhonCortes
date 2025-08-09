@@ -1,4 +1,4 @@
-/* Menu do usuário */
+/* Menu do usuário - Desktop */
 .user-menu-container {
   position: relative;
 }
@@ -18,21 +18,34 @@
   transform-origin: top right;
 }
 
-.user-dropdown-menu::before {
-  content: '';
-  position: absolute;
-  top: -6px;
-  right: 20px;
-  width: 12px;
-  height: 12px;
-  background: var(--white);
-  transform: rotate(45deg);
-  border-left: 1px solid rgba(184, 134, 11, 0.1);
-  border-top: 1px solid rgba(184, 134, 11, 0.1);
+/* Menu do usuário - Mobile */
+.mobile-user-menu-container {
+  position: relative;
+  margin-top: 10px;
 }
 
+.mobile-user-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--white);
+  border: 1px solid rgba(184, 134, 11, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 5px 15px -5px rgba(0, 0, 0, 0.05);
+  min-width: 240px;
+  z-index: 1200;
+  animation: dropdownSlideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  padding: 8px;
+  transform-origin: top center;
+}
+
+/* Triângulo removido */
+
 .user-dropdown-menu a,
-.user-dropdown-menu button {
+.user-dropdown-menu button,
+.mobile-user-dropdown-menu a,
+.mobile-user-dropdown-menu button {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -53,28 +66,35 @@
 }
 
 .user-dropdown-menu a svg,
-.user-dropdown-menu button svg {
+.user-dropdown-menu button svg,
+.mobile-user-dropdown-menu a svg,
+.mobile-user-dropdown-menu button svg {
   color: var(--primary-gold);
 }
 
 .user-dropdown-menu a:hover,
-.user-dropdown-menu button:hover {
+.user-dropdown-menu button:hover,
+.mobile-user-dropdown-menu a:hover,
+.mobile-user-dropdown-menu button:hover {
   background-color: rgba(255, 215, 0, 0.1);
   color: var(--primary-gold);
   transform: translateX(4px);
 }
 
-.user-dropdown-menu .logout-button {
+.user-dropdown-menu .logout-button,
+.mobile-user-dropdown-menu .logout-button {
   border-top: 1px solid rgba(184, 134, 11, 0.1);
   margin-top: 4px;
   padding-top: 12px;
 }
 
-.user-dropdown-menu .logout-button svg {
+.user-dropdown-menu .logout-button svg,
+.mobile-user-dropdown-menu .logout-button svg {
   color: var(--error);
 }
 
-.user-dropdown-menu .logout-button:hover {
+.user-dropdown-menu .logout-button:hover,
+.mobile-user-dropdown-menu .logout-button:hover {
   color: var(--error);
   background-color: rgba(220, 53, 69, 0.1);
 }
