@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Header from './components/Header'
+import Footer from './components/Footer'
 import Hero from './components/Hero'
 import AuthPage from './pages/Auth'
 import AdminServices from './pages/AdminServices'
@@ -104,6 +105,7 @@ function App() {
             </div>
           </div>
         )}
+        <Footer />
         </div>
       </Router>
     </AuthProvider>

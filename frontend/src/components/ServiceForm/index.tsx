@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, 
   Save, 
@@ -6,18 +6,22 @@ import {
   DollarSign,
   Clock,
   Tag,
-  FileText
+  FileText,
+  Image,
+  Trash,
+  AlertTriangle,
 } from 'lucide-react';
 import type { Service } from '../../types';
 import './styles.css';
 
 interface ServiceFormProps {
   service?: Service | null;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: FormData) => Promise<void>;
   onClose: () => void;
 }
 
 const ServiceForm: React.FC<ServiceFormProps> = ({ service, onSubmit, onClose }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -25,9 +29,14 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ service, onSubmit, onClose })
     duration: 30,
     price: 0,
     category: 'corte' as 'corte' | 'barba' | 'combo' | 'tratamento',
-    image: '',
     isActive: true
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>('');
+  const [_imageChanged, setImageChanged] = useState(false);
+  const [removeExistingImage, setRemoveExistingImage] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const categories = [
     { value: 'corte', label: 'Corte' },
@@ -36,6 +45,7 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ service, onSubmit, onClose })
     { value: 'tratamento', label: 'Tratamento' }
   ];
 
+  // Carrega os dados do serviço quando disponíveis
   useEffect(() => {
     if (service) {
       setFormData({
@@ -44,11 +54,58 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ service, onSubmit, onClose })
         duration: service.duration,
         price: service.price,
         category: service.category,
-        image: service.image || '',
         isActive: service.isActive
       });
+
+      if (service.image) {
+        // Verificar se a URL já tem o protocolo ou o host completo
+        const imageUrl = service.image.startsWith('http') 
+          ? service.image 
+          : `${import.meta.env.VITE_API_URL.replace('/api', '')}/${service.image}`;
+        setPreviewUrl(imageUrl);
+      }
     }
   }, [service]);
+
+  // Validação dos campos
+  useEffect(() => {
+    const errors: Record<string, string> = {};
+    
+    if (touched.name && formData.name.trim().length === 0) {
+      errors.name = 'Nome é obrigatório';
+    } else if (touched.name && formData.name.length > 100) {
+      errors.name = 'Nome deve ter no máximo 100 caracteres';
+    }
+    
+    if (touched.description && formData.description.trim().length === 0) {
+      errors.description = 'Descrição é obrigatória';
+    } else if (touched.description && formData.description.length > 500) {
+      errors.description = 'Descrição deve ter no máximo 500 caracteres';
+    }
+    
+    if (touched.duration && (formData.duration < 15 || formData.duration > 240)) {
+      errors.duration = 'Duração deve ser entre 15 e 240 minutos';
+    }
+    
+    if (touched.price && formData.price < 0) {
+      errors.price = 'Preço não pode ser negativo';
+    }
+    
+    setValidationErrors(errors);
+  }, [formData, touched]);
+
+  const isFormValid = () => {
+    return (
+      formData.name.trim().length > 0 &&
+      formData.name.length <= 100 &&
+      formData.description.trim().length > 0 &&
+      formData.description.length <= 500 &&
+      formData.duration >= 15 &&
+      formData.duration <= 240 &&
+      formData.price >= 0 &&
+      Object.keys(validationErrors).length === 0
+    );
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -57,14 +114,77 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ service, onSubmit, onClose })
       ...prev,
       [name]: type === 'number' ? Number(value) : value
     }));
+
+    setTouched(prev => ({
+      ...prev,
+      [name]: true
+    }));
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name } = e.target;
+    setTouched(prev => ({ ...prev, [name]: true }));
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+      setImageChanged(true);
+      setRemoveExistingImage(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setPreviewUrl('');
+    setImageChanged(true);
+    setRemoveExistingImage(true);
+    
+    // Limpar o input file
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isFormValid()) {
+      // Marcar todos os campos como tocados para mostrar erros
+      const allTouched: Record<string, boolean> = {};
+      for (const key in formData) {
+        allTouched[key] = true;
+      }
+      setTouched(allTouched);
+      return;
+    }
+    
     setLoading(true);
 
     try {
-      await onSubmit(formData);
+      const formDataToSubmit = new FormData();
+      
+      // Adicionar campos de texto
+      formDataToSubmit.append('name', formData.name);
+      formDataToSubmit.append('description', formData.description);
+      formDataToSubmit.append('duration', formData.duration.toString());
+      formDataToSubmit.append('price', formData.price.toString());
+      formDataToSubmit.append('category', formData.category);
+      formDataToSubmit.append('isActive', formData.isActive.toString());
+      
+      // Adicionar imagem se houver uma nova
+      if (imageFile) {
+        formDataToSubmit.append('image', imageFile);
+      }
+      
+      // Se for para remover a imagem existente
+      if (removeExistingImage) {
+        formDataToSubmit.append('removeImage', 'true');
+      }
+
+      await onSubmit(formDataToSubmit);
     } catch (error) {
       console.error('Erro ao salvar serviço:', error);
     } finally {
@@ -89,7 +209,7 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ service, onSubmit, onClose })
               <div className="form-group">
                 <label htmlFor="name">
                   <Tag size={18} />
-                  Nome do Serviço
+                  Nome do Serviço*
                 </label>
                 <input
                   type="text"
@@ -97,23 +217,30 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ service, onSubmit, onClose })
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
-                  required
+                  onBlur={handleBlur}
                   maxLength={100}
                   placeholder="Ex: Corte Masculino"
+                  className={validationErrors.name && touched.name ? 'error' : ''}
                 />
+                {validationErrors.name && touched.name && (
+                  <div className="error-message">
+                    <AlertTriangle size={14} />
+                    {validationErrors.name}
+                  </div>
+                )}
               </div>
 
               <div className="form-group">
                 <label htmlFor="category">
                   <FileText size={18} />
-                  Categoria
+                  Categoria*
                 </label>
                 <select
                   id="category"
                   name="category"
                   value={formData.category}
                   onChange={handleInputChange}
-                  required
+                  onBlur={handleBlur}
                 >
                   {categories.map(category => (
                     <option key={category.value} value={category.value}>
@@ -126,7 +253,7 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ service, onSubmit, onClose })
               <div className="form-group">
                 <label htmlFor="duration">
                   <Clock size={18} />
-                  Duração (minutos)
+                  Duração (minutos)*
                 </label>
                 <input
                   type="number"
@@ -134,17 +261,24 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ service, onSubmit, onClose })
                   name="duration"
                   value={formData.duration}
                   onChange={handleInputChange}
-                  required
+                  onBlur={handleBlur}
                   min={15}
                   max={240}
                   step={15}
+                  className={validationErrors.duration && touched.duration ? 'error' : ''}
                 />
+                {validationErrors.duration && touched.duration && (
+                  <div className="error-message">
+                    <AlertTriangle size={14} />
+                    {validationErrors.duration}
+                  </div>
+                )}
               </div>
 
               <div className="form-group">
                 <label htmlFor="price">
                   <DollarSign size={18} />
-                  Preço (R$)
+                  Preço (R$)*
                 </label>
                 <input
                   type="number"
@@ -152,58 +286,105 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ service, onSubmit, onClose })
                   name="price"
                   value={formData.price}
                   onChange={handleInputChange}
-                  required
+                  onBlur={handleBlur}
                   min={0}
                   step={0.01}
                   placeholder="0.00"
+                  className={validationErrors.price && touched.price ? 'error' : ''}
                 />
+                {validationErrors.price && touched.price && (
+                  <div className="error-message">
+                    <AlertTriangle size={14} />
+                    {validationErrors.price}
+                  </div>
+                )}
               </div>
 
               <div className="form-group full-width">
                 <label htmlFor="description">
                   <FileText size={18} />
-                  Descrição
+                  Descrição*
                 </label>
                 <textarea
                   id="description"
                   name="description"
                   value={formData.description}
                   onChange={handleInputChange}
-                  required
+                  onBlur={handleBlur}
                   maxLength={500}
                   rows={4}
                   placeholder="Descreva o serviço detalhadamente..."
+                  className={validationErrors.description && touched.description ? 'error' : ''}
                 />
+                {validationErrors.description && touched.description && (
+                  <div className="error-message">
+                    <AlertTriangle size={14} />
+                    {validationErrors.description}
+                  </div>
+                )}
+                <div className="character-count">
+                  {formData.description.length}/500
+                </div>
               </div>
 
               <div className="form-group full-width">
                 <label htmlFor="image">
-                  <Upload size={18} />
-                  URL da Imagem (opcional)
+                  <Image size={18} />
+                  Imagem do Serviço (opcional)
                 </label>
-                <input
-                  type="url"
-                  id="image"
-                  name="image"
-                  value={formData.image}
-                  onChange={handleInputChange}
-                  placeholder="https://exemplo.com/imagem.jpg"
-                />
+                
+                {previewUrl ? (
+                  <div className="image-preview-container">
+                    <img 
+                      src={previewUrl} 
+                      alt="Prévia da imagem" 
+                      className="image-preview" 
+                    />
+                    <button 
+                      type="button" 
+                      className="remove-image-btn"
+                      onClick={handleRemoveImage}
+                    >
+                      <Trash size={18} />
+                      Remover Imagem
+                    </button>
+                  </div>
+                ) : (
+                  <div className="image-upload-container">
+                    <input
+                      type="file"
+                      id="image"
+                      name="image"
+                      ref={fileInputRef}
+                      onChange={handleImageChange}
+                      accept="image/jpeg,image/png,image/gif,image/webp"
+                      className="image-input"
+                    />
+                    <label htmlFor="image" className="image-upload-label">
+                      <Upload size={24} />
+                      <span>Clique para selecionar uma imagem</span>
+                      <small>JPG, PNG, GIF ou WebP (máx. 5MB)</small>
+                    </label>
+                  </div>
+                )}
               </div>
 
-              {service && (
-                <div className="form-group">
-                  <label className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      name="isActive"
-                      checked={formData.isActive}
-                      onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
-                    />
-                    Serviço ativo
-                  </label>
-                </div>
-              )}
+              <div className="form-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    name="isActive"
+                    checked={formData.isActive}
+                    onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
+                  />
+                  Serviço ativo
+                </label>
+                <small className="help-text">
+                  {formData.isActive ? 
+                    'O serviço estará visível e disponível para agendamento' : 
+                    'O serviço ficará oculto e indisponível para agendamento'}
+                </small>
+              </div>
             </div>
           </div>
 
@@ -219,7 +400,7 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ service, onSubmit, onClose })
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={loading}
+              disabled={loading || !isFormValid()}
             >
               {loading ? (
                 <>

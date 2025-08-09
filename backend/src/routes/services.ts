@@ -1,6 +1,8 @@
 import express from 'express';
 import Service from '../models/Service';
 import { authenticateToken, requireAdmin } from '../middleware/auth';
+import { uploadServiceImage, deleteOldServiceImage } from '../middleware/serviceUpload';
+import path from 'path';
 
 const router = express.Router();
 
@@ -49,59 +51,103 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create new service (Admin only)
-router.post('/', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const { name, description, duration, price, category, image } = req.body;
+router.post('/', 
+  authenticateToken, 
+  requireAdmin,
+  uploadServiceImage.single('image'), 
+  async (req, res) => {
+    try {
+      const { name, description, duration, price, category, isActive } = req.body;
+      
+      let imagePath = '';
+      if (req.file) {
+        // O caminho relativo para a imagem em relação à raiz do projeto
+        imagePath = path.join('uploads', 'services', req.file.filename).replace(/\\/g, '/');
+      }
 
-    const service = new Service({
-      name,
-      description,
-      duration,
-      price,
-      category,
-      image
-    });
+      const service = new Service({
+        name,
+        description,
+        duration: Number(duration),
+        price: Number(price),
+        category,
+        image: imagePath || '',
+        isActive: isActive === 'true'
+      });
 
-    await service.save();
+      await service.save();
 
-    res.status(201).json({
-      message: 'Serviço criado com sucesso',
-      service
-    });
-  } catch (error: any) {
-    res.status(400).json({ 
-      message: 'Erro ao criar serviço',
-      error: error.message 
-    });
-  }
+      res.status(201).json({
+        message: 'Serviço criado com sucesso',
+        service
+      });
+    } catch (error: any) {
+      res.status(400).json({ 
+        message: 'Erro ao criar serviço',
+        error: error.message 
+      });
+    }
 });
 
 // Update service (Admin only)
-router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, description, duration, price, category, image, isActive } = req.body;
+router.put('/:id', 
+  authenticateToken, 
+  requireAdmin,
+  uploadServiceImage.single('image'), 
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name, description, duration, price, category, isActive, removeImage } = req.body;
 
-    const service = await Service.findByIdAndUpdate(
-      id,
-      { name, description, duration, price, category, image, isActive },
-      { new: true, runValidators: true }
-    );
+      // Buscar serviço atual para verificar a imagem existente
+      const currentService = await Service.findById(id);
+      if (!currentService) {
+        return res.status(404).json({ message: 'Serviço não encontrado' });
+      }
 
-    if (!service) {
-      return res.status(404).json({ message: 'Serviço não encontrado' });
+      // Preparar objeto de atualização
+      const updateData: any = {
+        name,
+        description,
+        duration: Number(duration),
+        price: Number(price),
+        category,
+        isActive: isActive === 'true'
+      };
+
+      // Verificar se uma nova imagem foi enviada
+      if (req.file) {
+        // Deletar a imagem antiga se existir
+        if (currentService.image) {
+          deleteOldServiceImage(currentService.image);
+        }
+        // Salvar o caminho da nova imagem
+        updateData.image = path.join('uploads', 'services', req.file.filename).replace(/\\/g, '/');
+      } else if (removeImage === 'true') {
+        // Se não foi enviada nova imagem, mas foi solicitado remover a existente
+        if (currentService.image) {
+          deleteOldServiceImage(currentService.image);
+        }
+        updateData.image = '';
+      }
+
+      // Atualizar o serviço
+      const service = await Service.findByIdAndUpdate(
+        id,
+        updateData,
+        { new: true, runValidators: true }
+      );
+
+      res.json({
+        message: 'Serviço atualizado com sucesso',
+        service
+      });
+    } catch (error: any) {
+      res.status(400).json({ 
+        message: 'Erro ao atualizar serviço',
+        error: error.message 
+      });
     }
-
-    res.json({
-      message: 'Serviço atualizado com sucesso',
-      service
-    });
-  } catch (error: any) {
-    res.status(400).json({ 
-      message: 'Erro ao atualizar serviço',
-      error: error.message 
-    });
-  }
 });
 
 // Delete service (Admin only) - Soft delete

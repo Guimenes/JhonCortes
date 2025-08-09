@@ -9,7 +9,6 @@ import type {
   RegisterData,
   AuthResponse,
   CreateAppointmentData,
-  CreateServiceData,
   CreateScheduleData,
   CreateUnavailabilityData,
   UpdateProfileData,
@@ -107,13 +106,21 @@ export const servicesAPI = {
     return response.data;
   },
 
-  create: async (data: CreateServiceData): Promise<{ message: string; service: Service }> => {
-    const response = await api.post('/services', data);
+  create: async (data: FormData): Promise<{ message: string; service: Service }> => {
+    const response = await api.post('/services', data, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 
-  update: async (id: string, data: Partial<CreateServiceData>): Promise<{ message: string; service: Service }> => {
-    const response = await api.put(`/services/${id}`, data);
+  update: async (id: string, data: FormData): Promise<{ message: string; service: Service }> => {
+    const response = await api.put(`/services/${id}`, data, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 
@@ -130,6 +137,18 @@ export const servicesAPI = {
   // Admin endpoints
   getAllAdmin: async (): Promise<Service[]> => {
     const response = await api.get('/services/admin');
+    return response.data;
+  },
+
+  toggleActive: async (id: string, isActive: boolean): Promise<{ message: string; service: Service }> => {
+    const formData = new FormData();
+    formData.append('isActive', isActive.toString());
+    
+    const response = await api.put(`/services/${id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 };

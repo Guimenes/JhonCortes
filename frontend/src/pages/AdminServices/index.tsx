@@ -97,7 +97,7 @@ const AdminServices: React.FC = () => {
 
   const handleToggleActive = async (service: Service) => {
     try {
-      await servicesAPI.update(service._id, { isActive: !service.isActive });
+      await servicesAPI.toggleActive(service._id, !service.isActive);
       showSuccess('Sucesso!', `Serviço ${service.isActive ? 'desativado' : 'ativado'} com sucesso!`);
       loadServices();
     } catch (error) {
@@ -238,6 +238,21 @@ const AdminServices: React.FC = () => {
                     )}
                   </div>
                 </div>
+
+                {service.image && (
+                  <div className="service-image-container">
+                    <img 
+                      src={service.image.startsWith('http') ? service.image : `${import.meta.env.VITE_API_URL.replace('/api', '')}/${service.image}`}
+                      alt={service.name} 
+                      className="service-image" 
+                      onError={(e) => {
+                        // Fallback para quando a imagem falha ao carregar
+                        (e.target as HTMLImageElement).style.display = 'none';
+                        (e.target as HTMLImageElement).parentElement!.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
 
                 <div className="service-info">
                   <p className="service-description">{service.description}</p>
